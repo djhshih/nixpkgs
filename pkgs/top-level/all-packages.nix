@@ -14167,6 +14167,38 @@ let
 
   plink = callPackage ../applications/science/biology/plink/default.nix { };
 
+  muscle = callPackage ../applications/science/biology/muscle { };
+
+  bedtools = callPackage ../applications/science/biology/bedtools { };
+
+  vcftools = callPackage ../applications/science/biology/vcftools { };
+
+  htslib = callPackage ../applications/science/biology/htslib {};
+
+  samtools = callPackage ../applications/science/biology/samtools {};
+
+  bcftools = callPackage ../applications/science/biology/bcftools {};
+
+  bwa = callPackage ../applications/science/biology/bwa {};
+
+  bowtie2 = callPackage ../applications/science/biology/bowtie2 {};
+
+  mrsfast = callPackage ../applications/science/biology/mrsfast {};
+
+  star = callPackage ../applications/science/biology/star {};
+
+  rsem = callPackage ../applications/science/biology/rsem {};
+
+  express = callPackage ../applications/science/biology/express {};
+
+  bamtools = callPackage ../applications/science/biology/bamtools {};
+
+  bismark = callPackage ../applications/science/biology/bismark {};
+
+  fastqc = callPackage ../applications/science/biology/fastqc {};
+
+  sickle = callPackage ../applications/science/biology/sickle {};
+
 
   ### SCIENCE/MATH
 

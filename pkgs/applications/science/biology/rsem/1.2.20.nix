@@ -26,7 +26,7 @@ stdenv.mkDerivation rec {
     mkdir -p $out/bin
     # install all executables
     install $(find . -maxdepth 1 -type f -perm -u+x) $out/bin
-    install $(find EBSeq -maxdepth 1 -type f -perm -u+x) $out/bin
+    install $(find EBSeq -name rsem-\* -maxdepth 1 -type f -perm -u+x) $out/bin
     install -m644 rsem_perl_utils.pm WHAT_IS_NEW $out/bin
   '';
 

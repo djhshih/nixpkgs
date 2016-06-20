@@ -16039,6 +16039,8 @@ in
 
   sickle = callPackage ../applications/science/bioinformatics/sickle {};
 
+  snowtools = callPackage ../applications/science/bioinformatics/snowtools {};
+
   ### SCIENCE/MATH
 
   arpack = callPackage ../development/libraries/science/math/arpack { };

@@ -14173,7 +14173,7 @@ let
 
   vcftools = callPackage ../applications/science/biology/vcftools { };
 
-  htslib = callPackage ../applications/science/biology/htslib {};
+  htslib = callPackage ../development/libraries/htslib {};
 
   samtools = callPackage ../applications/science/biology/samtools {};
 

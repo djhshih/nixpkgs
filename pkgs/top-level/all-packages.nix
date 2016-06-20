@@ -14167,37 +14167,38 @@ let
 
   plink = callPackage ../applications/science/biology/plink/default.nix { };
 
-  muscle = callPackage ../applications/science/biology/muscle { };
 
-  bedtools = callPackage ../applications/science/biology/bedtools { };
+  muscle = callPackage ../applications/science/bioinformatics/muscle { };
 
-  vcftools = callPackage ../applications/science/biology/vcftools { };
+  samtools = callPackage ../applications/science/bioinformatics/samtools {};
+
+  bwa = callPackage ../applications/science/bioinformatics/bwa {};
+
+  bedtools = callPackage ../applications/science/bioinformatics/bedtools { };
+
+  vcftools = callPackage ../applications/science/bioinformatics/vcftools { };
 
   htslib = callPackage ../development/libraries/htslib {};
 
-  samtools = callPackage ../applications/science/biology/samtools {};
+  bcftools = callPackage ../applications/science/bioinformatics/bcftools {};
 
-  bcftools = callPackage ../applications/science/biology/bcftools {};
+  bowtie2 = callPackage ../applications/science/bioinformatics/bowtie2 {};
 
-  bwa = callPackage ../applications/science/biology/bwa {};
+  mrsfast = callPackage ../applications/science/bioinformatics/mrsfast {};
 
-  bowtie2 = callPackage ../applications/science/biology/bowtie2 {};
+  star = callPackage ../applications/science/bioinformatics/star {};
 
-  mrsfast = callPackage ../applications/science/biology/mrsfast {};
+  rsem = callPackage ../applications/science/bioinformatics/rsem {};
 
-  star = callPackage ../applications/science/biology/star {};
+  express = callPackage ../applications/science/bioinformatics/express {};
 
-  rsem = callPackage ../applications/science/biology/rsem {};
+  bamtools = callPackage ../applications/science/bioinformatics/bamtools {};
 
-  express = callPackage ../applications/science/biology/express {};
+  bismark = callPackage ../applications/science/bioinformatics/bismark {};
 
-  bamtools = callPackage ../applications/science/biology/bamtools {};
+  fastqc = callPackage ../applications/science/bioinformatics/fastqc {};
 
-  bismark = callPackage ../applications/science/biology/bismark {};
-
-  fastqc = callPackage ../applications/science/biology/fastqc {};
-
-  sickle = callPackage ../applications/science/biology/sickle {};
+  sickle = callPackage ../applications/science/bioinformatics/sickle {};
 
 
   ### SCIENCE/MATH

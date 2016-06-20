@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ htslib zlib gsl perl ];
 
-  patches = [ ./use-system-htslib.patch ];
+  patches = [ ./use-system-htslib_1.2.patch ];
 
   buildPhase = ''
     make USE_GPL=1

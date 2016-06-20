@@ -16001,9 +16001,11 @@ in
 
   plink = callPackage ../applications/science/biology/plink/default.nix { };
 
-  samtools = callPackage ../applications/science/biology/samtools/default.nix { };
+  samtools_upstream = callPackage ../applications/science/biology/samtools/default.nix { };
 
-  bwa = callPackage ../applications/science/biology/bwa/default.nix { };
+  bwa_upstream = callPackage ../applications/science/biology/bwa/default.nix { };
+
+  ### SCIENCE/BIOINFORMATICS
 
   muscle = callPackage ../applications/science/bioinformatics/muscle { };
 
@@ -16036,7 +16038,6 @@ in
   fastqc = callPackage ../applications/science/bioinformatics/fastqc {};
 
   sickle = callPackage ../applications/science/bioinformatics/sickle {};
-
 
   ### SCIENCE/MATH
 

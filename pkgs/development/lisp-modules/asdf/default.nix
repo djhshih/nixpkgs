@@ -1,16 +1,16 @@
-{stdenv, fetchurl, texinfo, texLive}:
+{stdenv, fetchurl, texinfo, texLive, perl}:
 let
   s = # Generated upstream information
   rec {
     baseName="asdf";
-    version="3.1.4";
+    version="3.1.6";
     name="${baseName}-${version}";
-    hash="0hyc2g22khcmvxmlcaq0xbxqhq59spgc2nc1s0gz1r9mcgrzm2xw";
-    url="http://common-lisp.net/project/asdf/archives/asdf-3.1.4.tar.gz";
-    sha256="0hyc2g22khcmvxmlcaq0xbxqhq59spgc2nc1s0gz1r9mcgrzm2xw";
+    hash="0535pf1828w5q6ydhmawf5f33xh6bc2czw76llgpikla0gdzh58w";
+    url="http://common-lisp.net/project/asdf/archives/asdf-3.1.6.tar.gz";
+    sha256="0535pf1828w5q6ydhmawf5f33xh6bc2czw76llgpikla0gdzh58w";
   };
   buildInputs = [
-    texinfo texLive
+    texinfo texLive perl
   ];
 in
 stdenv.mkDerivation {
@@ -19,7 +19,6 @@ stdenv.mkDerivation {
   src = fetchurl {
     inherit (s) url sha256;
   };
-  sourceRoot=".";
   buildPhase = ''
     make build/asdf.lisp
     make -C doc asdf.info asdf.html

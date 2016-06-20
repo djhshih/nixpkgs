@@ -64,7 +64,7 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "http://download-installer.cdn.mozilla.net/pub/thunderbird/releases/${version}/${source.arch}/${source.locale}/thunderbird-${version}.tar.bz2";
-    inherit (source) sha1;
+    inherit (source) sha512;
   };
 
   phases = "unpackPhase installPhase";
@@ -105,7 +105,7 @@ stdenv.mkDerivation {
       nspr
       nss
       pango
-    ] + ":" + stdenv.lib.makeSearchPath "lib64" [
+    ] + ":" + stdenv.lib.makeSearchPathOutput "lib" "lib64" [
       stdenv.cc.cc
     ];
 
@@ -134,7 +134,7 @@ stdenv.mkDerivation {
       [Desktop Entry]
       Type=Application
       Exec=$out/bin/thunderbird
-      Icon=$out/lib/thunderbird-bin-${version}/chrome/icons/default/default256.png
+      Icon=$out/usr/lib/thunderbird-bin-${version}/chrome/icons/default/default256.png
       Name=Thunderbird
       GenericName=Mail Reader
       Categories=Application;Network;

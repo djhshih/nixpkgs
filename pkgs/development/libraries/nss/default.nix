@@ -1,6 +1,4 @@
-{ stdenv, fetchurl, nspr, perl, zlib, sqlite
-, includeTools ? false
-}:
+{ stdenv, fetchurl, nspr, perl, zlib, sqlite }:
 
 let
 
@@ -11,11 +9,11 @@ let
 
 in stdenv.mkDerivation rec {
   name = "nss-${version}";
-  version = "3.19.2";
+  version = "3.23";
 
   src = fetchurl {
-    url = "http://ftp.mozilla.org/pub/mozilla.org/security/nss/releases/NSS_3_19_2_RTM/src/${name}.tar.gz";
-    sha256 = "1306663e8f61d8449ad8cbcffab743a604dcd9f6f34232c210847c51dce2c9ae";
+    url = "mirror://mozilla/security/nss/releases/NSS_3_23_RTM/src/${name}.tar.gz";
+    sha256 = "1kqidv91icq96m9m8zx50n7px08km2l88458rkgyjwcn3kiq7cwl";
   };
 
   buildInputs = [ nspr perl zlib sqlite ];
@@ -25,7 +23,7 @@ in stdenv.mkDerivation rec {
   '';
 
   patches =
-    [ ./nss-3.17-gentoo-fixups.patch
+    [ ./nss-3.21-gentoo-fixups.patch
       # Based on http://patch-tracker.debian.org/patch/series/dl/nss/2:3.15.4-1/85_security_load.patch
       ./85_security_load.patch
     ];
@@ -46,17 +44,22 @@ in stdenv.mkDerivation rec {
     INSTALL_TARGET
   '';
 
+  outputs = [ "dev" "out" "tools" ];
+
   preConfigure = "cd nss";
 
   makeFlags = [
-    "NSPR_INCLUDE_DIR=${nspr}/include/nspr"
-    "NSPR_LIB_DIR=${nspr}/lib"
+    "NSPR_INCLUDE_DIR=${nspr.dev}/include/nspr"
+    "NSPR_LIB_DIR=${nspr.out}/lib"
     "NSDISTMODE=copy"
     "BUILD_OPT=1"
     "SOURCE_PREFIX=\$(out)"
     "NSS_ENABLE_ECC=1"
+    "USE_SYSTEM_ZLIB=1"
     "NSS_USE_SYSTEM_SQLITE=1"
   ] ++ stdenv.lib.optional stdenv.is64bit "USE_64=1";
+
+  NIX_CFLAGS_COMPILE = "-Wno-error";
 
   postInstall = ''
     rm -rf $out/private
@@ -75,12 +78,16 @@ in stdenv.mkDerivation rec {
       libfile="$out/lib/lib$libname.so"
       LD_LIBRARY_PATH=$out/lib $out/bin/shlibsign -v -i "$libfile"
     done
-  '' + stdenv.lib.optionalString (!includeTools) ''
-    find $out/bin -type f \( -name nss-config -o -delete \)
+
+    moveToOutput bin "$tools"
+    moveToOutput bin/nss-config "$dev"
+    moveToOutput lib/libcrmf.a "$dev" # needed by firefox, for example
+    rm "$out"/lib/*.a
   '';
 
   meta = {
     homepage = https://developer.mozilla.org/en-US/docs/NSS;
     description = "A set of libraries for development of security-enabled client and server applications";
+    platforms = stdenv.lib.platforms.all;
   };
 }

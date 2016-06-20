@@ -1,7 +1,8 @@
 { stdenv, lib, makeWrapper, fetchurl, curl, sasl, openssh, autoconf
-, automake114x, libtool, unzip, gnutar, jdk, maven, python, wrapPython
-, setuptools, distutils-cfg, boto, pythonProtobuf, apr, subversion
-, leveldb, glog, perf, utillinux, libnl, iproute
+, automake115x, libtool, unzip, gnutar, jdk, maven, python, wrapPython
+, setuptools, boto, pythonProtobuf, apr, subversion, gzip, systemd
+, leveldb, glog, perf, utillinux, libnl, iproute, openssl, libevent
+, bash
 }:
 
 let
@@ -9,20 +10,27 @@ let
   soext = if stdenv.system == "x86_64-darwin" then "dylib" else "so";
 
 in stdenv.mkDerivation rec {
-  version = "0.22.1";
+  version = "0.28.0";
   name = "mesos-${version}";
 
+  enableParallelBuilding = true;
   dontDisableStatic = true;
 
   src = fetchurl {
-    url = "http://www.apache.org/dist/mesos/${version}/mesos-${version}.tar.gz";
-    sha256 = "0ry0ppzgpab68fz5bzd7ry5rjbg8xjz73x1x4c5id42cpsqnn7x5";
+    url = "mirror://apache/mesos/${version}/${name}.tar.gz";
+    sha256 = "05dnj6r5pspizna0fk7yayn38a4w9hlcswgg8l9qmb35m6nq6hby";
   };
 
+  patches = [
+    # https://reviews.apache.org/r/36610/
+    ./rb36610.patch
+    ./maven_repo.patch
+  ];
+
   buildInputs = [
-    makeWrapper autoconf automake114x libtool curl sasl jdk maven
-    python wrapPython boto distutils-cfg setuptools leveldb
-    subversion apr glog
+    makeWrapper autoconf automake115x libtool curl sasl jdk maven
+    python wrapPython boto setuptools leveldb
+    subversion apr glog openssl libevent
   ] ++ lib.optionals stdenv.isLinux [
     libnl
   ];
@@ -32,33 +40,52 @@ in stdenv.mkDerivation rec {
   ];
 
   preConfigure = ''
-    export MAVEN_OPTS="-Dmaven.repo.local=${mavenRepo}"
+    substituteInPlace src/Makefile.am --subst-var-by mavenRepo ${mavenRepo}
+    
+    substituteInPlace 3rdparty/libprocess/include/process/subprocess.hpp \
+      --replace '"sh"' '"${bash}/bin/bash"'
 
-    substituteInPlace src/launcher/fetcher.cpp \
-      --replace '"tar' '"${gnutar}/bin/tar'    \
-      --replace '"unzip' '"${unzip}/bin/unzip'
+    substituteInPlace 3rdparty/libprocess/3rdparty/stout/include/stout/posix/os.hpp \
+      --replace '"sh"' '"${bash}/bin/bash"'
+
+    substituteInPlace 3rdparty/libprocess/3rdparty/stout/include/stout/os/posix/fork.hpp \
+      --replace '"sh"' '"${bash}/bin/bash"'
 
     substituteInPlace src/cli/mesos-scp        \
       --replace "'scp " "'${openssh}/bin/scp "
 
-    substituteInPlace src/cli/python/mesos/cli.py \
-      --replace "['mesos-resolve'" "['$out/bin/mesos-resolve'"
+    substituteInPlace src/launcher/executor.cpp \
+      --replace '"sh"' '"${bash}/bin/bash"'
+    
+    substituteInPlace src/launcher/fetcher.cpp \
+      --replace '"gzip' '"${gzip}/bin/gzip'    \
+      --replace '"tar' '"${gnutar}/bin/tar'    \
+      --replace '"unzip' '"${unzip}/bin/unzip'
 
-  '' + lib.optionalString (stdenv.isLinux) ''
+    substituteInPlace src/python/cli/src/mesos/cli.py \
+     --replace "['mesos-resolve'" "['$out/bin/mesos-resolve'"
+    
+    substituteInPlace src/slave/containerizer/mesos/launch.cpp \
+      --replace '"sh"' '"${bash}/bin/bash"'
+
+  '' + lib.optionalString stdenv.isLinux ''
 
     substituteInPlace configure.ac             \
-      --replace /usr/include/libnl3 ${libnl}/include/libnl3
+      --replace /usr/include/libnl3 ${libnl.dev}/include/libnl3
 
     substituteInPlace src/linux/perf.cpp       \
       --replace '"perf ' '"${perf}/bin/perf '
+    
+    substituteInPlace src/linux/systemd.cpp \
+      --replace 'os::realpath("/sbin/init")' '"${systemd}/lib/systemd/systemd"'
 
-    substituteInPlace src/slave/containerizer/isolators/filesystem/shared.cpp \
+    substituteInPlace src/slave/containerizer/mesos/isolators/filesystem/shared.cpp \
       --replace '"mount ' '"${utillinux}/bin/mount ' \
 
-    substituteInPlace src/slave/containerizer/isolators/namespaces/pid.cpp \
+    substituteInPlace src/slave/containerizer/mesos/isolators/namespaces/pid.cpp \
       --replace '"mount ' '"${utillinux}/bin/mount ' \
 
-    substituteInPlace src/slave/containerizer/isolators/network/port_mapping.cpp \
+    substituteInPlace src/slave/containerizer/mesos/isolators/network/port_mapping.cpp \
       --replace '"tc ' '"${iproute}/bin/tc '   \
       --replace '"ip ' '"${iproute}/bin/ip '   \
       --replace '"mount ' '"${utillinux}/bin/mount ' \
@@ -67,13 +94,17 @@ in stdenv.mkDerivation rec {
 
   configureFlags = [
     "--sbindir=\${out}/bin"
-    "--with-apr=${apr}"
-    "--with-svn=${subversion}"
+    "--with-apr=${apr.dev}"
+    "--with-svn=${subversion.dev}"
     "--with-leveldb=${leveldb}"
     "--with-glog=${glog}"
     "--with-glog=${glog}"
     "--enable-optimize"
     "--disable-python-dependency-install"
+    "--enable-ssl"
+    "--with-ssl=${openssl.dev}"
+    "--enable-libevent"
+    "--with-libevent=${libevent.dev}"
   ] ++ lib.optionals stdenv.isLinux [
     "--with-network-isolator"
   ];
@@ -93,13 +124,23 @@ in stdenv.mkDerivation rec {
     echo "export MESOS_NATIVE_LIBRARY=$MESOS_NATIVE_JAVA_LIBRARY" >> $out/nix-support/setup-hook
 
     # Inspired by: pkgs/development/python-modules/generic/default.nix
+    pushd src/python
     mkdir -p $out/lib/${python.libPrefix}/site-packages
     export PYTHONPATH="$out/lib/${python.libPrefix}/site-packages:$PYTHONPATH"
-    ${python}/bin/${python.executable} src/python/setup.py install \
+    ${python}/bin/${python.executable} setup.py install \
       --install-lib=$out/lib/${python.libPrefix}/site-packages \
       --old-and-unmanageable \
       --prefix="$out"
     rm -f "$out/lib/${python.libPrefix}"/site-packages/site.py*
+    popd
+
+    # optional python dependency for mesos cli
+    pushd src/python/cli
+    ${python}/bin/${python.executable} setup.py install \
+      --install-lib=$out/lib/${python.libPrefix}/site-packages \
+      --old-and-unmanageable \
+      --prefix="$out"
+    popd
   '';
 
   postFixup = ''
@@ -120,7 +161,7 @@ in stdenv.mkDerivation rec {
     # wrap the python programs
     for prog in mesos-cat mesos-ps mesos-scp mesos-tail; do
       wrapProgram "$out/bin/$prog" \
-        --prefix PYTHONPATH ":" "$out/libexec/mesos/python"
+        --prefix PYTHONPATH ":" "$out/lib/${python.libPrefix}/site-packages"
       true
     done
   '';
@@ -129,7 +170,7 @@ in stdenv.mkDerivation rec {
     homepage    = "http://mesos.apache.org";
     license     = licenses.asl20;
     description = "A cluster manager that provides efficient resource isolation and sharing across distributed applications, or frameworks";
-    maintainers = with maintainers; [ cstrahan offline rushmorem ];
-    platforms   = with platforms; linux;
+    maintainers = with maintainers; [ cstrahan kevincox offline rushmorem ];
+    platforms   = platforms.linux;
   };
 }

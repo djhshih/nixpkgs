@@ -49,9 +49,8 @@ in
       type = types.int;
       default = 4;
       description = ''
-        The kernel console log level.  Only log messages with a
-        priority numerically less than this will appear on the
-        console.
+        The kernel console log level.  Log messages with a priority
+        numerically less than this will not appear on the console.
       '';
     };
 
@@ -64,7 +63,7 @@ in
     };
 
     boot.extraModulePackages = mkOption {
-      type = types.listOf types.path;
+      type = types.listOf types.package;
       default = [];
       example = literalExample "[ pkgs.linuxPackages.nvidia_x11 ]";
       description = "A list of additional packages supplying kernel modules.";
@@ -159,7 +158,7 @@ in
 
     boot.kernel.sysctl."kernel.printk" = config.boot.consoleLogLevel;
 
-    boot.kernelModules = [ "loop" "configs" "atkbd" ];
+    boot.kernelModules = [ "loop" "atkbd" ];
 
     boot.initrd.availableKernelModules =
       [ # Note: most of these (especially the SATA/PATA modules)
@@ -185,6 +184,9 @@ in
         "ide_disk"
         "ide_generic"
 
+        # SD cards and internal eMMC drives.
+        "mmc_block"
+
         # Support USB keyboards, in case the boot fails and we only have
         # a USB keyboard.
         "uhci_hcd"
@@ -197,9 +199,6 @@ in
         "usbhid"
         "hid_generic" "hid_lenovo"
         "hid_apple" "hid_logitech_dj" "hid_lenovo_tpkbd" "hid_roccat"
-
-        # Unix domain sockets (needed by udev).
-        "unix"
 
         # Misc. stuff.
         "pcips2" "atkbd"
@@ -217,7 +216,7 @@ in
       ];
 
     # The Linux kernel >= 2.6.27 provides firmware.
-    hardware.firmware = [ "${kernel}/lib/firmware" ];
+    hardware.firmware = [ kernel ];
 
     # Create /etc/modules-load.d/nixos.conf, which is read by
     # systemd-modules-load.service to load required kernel modules.

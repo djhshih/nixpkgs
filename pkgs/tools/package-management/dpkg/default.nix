@@ -1,29 +1,32 @@
 { stdenv, fetchurl, perl, zlib, bzip2, xz, makeWrapper }:
 
-let version = "1.18.1"; in
-
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "dpkg-${version}";
+  version = "1.18.7";
 
   src = fetchurl {
     url = "mirror://debian/pool/main/d/dpkg/dpkg_${version}.tar.xz";
-    sha256 = "1nlr0djn5zl9cmlcxxmd7dk3fx0zw9gi4qm7cfz0r5qwl9yaj9nb";
+    sha256 = "0yxqv7b5a1qhhas9dzxr5gwj22jqxisrwzvrmwms8l67dlx6vqxc";
   };
 
   postPatch = ''
-    # dpkg tries to force some dependents like debian_devscripts to use
+    # dpkg tries to force some dependents like debian-devscripts to use
     # -fstack-protector-strong - not (yet?) a good idea. Disable for now:
     substituteInPlace scripts/Dpkg/Vendor/Debian.pm \
       --replace "stackprotectorstrong => 1" "stackprotectorstrong => 0"
   '';
 
-  configureFlags = "--disable-dselect --with-admindir=/var/lib/dpkg PERL_LIBDIR=$(out)/${perl.libPrefix}";
+  configureFlags = [
+    "--disable-dselect"
+    "--with-admindir=/var/lib/dpkg"
+    "PERL_LIBDIR=$(out)/${perl.libPrefix}"
+  ];
 
   preConfigure = ''
-    # Nice: dpkg has a circular dependency on itself.  Its configure
+    # Nice: dpkg has a circular dependency on itself. Its configure
     # script calls scripts/dpkg-architecture, which calls "dpkg" in
-    # $PATH.  It doesn't actually use its result, but fails if it
-    # isn't present.  So make a dummy available.
+    # $PATH. It doesn't actually use its result, but fails if it
+    # isn't present, so make a dummy available.
     touch $TMPDIR/dpkg
     chmod +x $TMPDIR/dpkg
     PATH=$TMPDIR:$PATH

@@ -1,9 +1,9 @@
 { stdenv, lib, fetchurl, fetchhg, bison, glibc, bash, coreutils, makeWrapper, tzdata, iana_etc, perl }:
 
 let
-  loader386 = "${glibc}/lib/ld-linux.so.2";
-  loaderAmd64 = "${glibc}/lib/ld-linux-x86-64.so.2";
-  loaderArm = "${glibc}/lib/ld-linux.so.3";
+  loader386 = "${glibc.out}/lib/ld-linux.so.2";
+  loaderAmd64 = "${glibc.out}/lib/ld-linux-x86-64.so.2";
+  loaderArm = "${glibc.out}/lib/ld-linux.so.3";
   srcs = {
     golang = fetchurl {
       url = https://storage.googleapis.com/golang/go1.3.3.src.tar.gz;
@@ -102,12 +102,12 @@ stdenv.mkDerivation {
 
   setupHook = ./setup-hook.sh;
 
-  meta = with stdenv.lib; {
+  meta = {
     branch = "1.3";
     homepage = http://golang.org/;
     description = "The Go Programming language";
-    license = licenses.bsd3;
-    maintainers = with maintainers; [ cstrahan ];
-    platforms = platforms.linux ++ platforms.darwin;
+    license = "BSD";
+    maintainers = with stdenv.lib.maintainers; [ cstrahan ];
+    platforms = stdenv.lib.platforms.linux ++ stdenv.lib.platforms.darwin;
   };
 }

@@ -1,12 +1,12 @@
 { stdenv, fetchFromGitHub, pkgconfig, gettext, ncurses, libdrm, libpciaccess }:
 
-let version = "2015-06-24"; in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "radeontop-${version}";
+  version = "2015-11-24";
 
   src = fetchFromGitHub {
-    sha256 = "06cn7lixxx94c1fki0plg9f4rdy459mgi9yl80m0k1a20jqykz2a";
-    rev = "976cae0be0ffb9142d5e63e435960c6b2bb0eb34";
+    sha256 = "0irwq6rps5mnban8cxbrm59wpyv4j80q3xdjm9fxvfpiyys2g2hz";
+    rev = "0e82272f3e8f2287c1bc1d8a0c7bdbd5c4818b37";
     repo = "radeontop";
     owner = "clbr";
   };
@@ -20,7 +20,7 @@ stdenv.mkDerivation {
     substituteInPlace getver.sh --replace ver=unknown ver=${version}
   '';
 
-  makeFlags = "PREFIX=$(out)";
+  makeFlags = [ "PREFIX=$(out)" ];
 
   meta = with stdenv.lib; {
     description = "Top-like tool for viewing AMD Radeon GPU utilization";

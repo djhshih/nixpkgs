@@ -1,32 +1,38 @@
-{ lib, fetchgit, goPackages }:
+{ stdenv, fetchgit, go }:
 
-with goPackages;
-
-buildGoPackage rec {
+stdenv.mkDerivation rec {
+  version = "0.13.7";
   name = "syncthing-${version}";
-  version = "0.11.15";
-  goPackagePath = "github.com/syncthing/syncthing";
+
   src = fetchgit {
-    url = "git://github.com/syncthing/syncthing.git";
+    url = https://github.com/syncthing/syncthing;
     rev = "refs/tags/v${version}";
-    sha256 = "8afd0a0999c7d7d285f361589330421c00012da86ce91623c5ad6b96d8fb9695";
+    sha256 = "0n1yqaaag4l30i6zqb74z6f800xjvj9zvprb12nl9xlm5swrwrkz";
   };
 
-  subPackages = [ "cmd/syncthing" ];
+  buildInputs = [ go ];
 
-  buildFlagsArray = "-ldflags=-w -X main.Version v${version}";
+  buildPhase = ''
+    mkdir -p src/github.com/syncthing
+    ln -s $(pwd) src/github.com/syncthing/syncthing
+    export GOPATH=$(pwd)
 
-  preBuild = "export GOPATH=$GOPATH:$NIX_BUILD_TOP/go/src/${goPackagePath}/Godeps/_workspace";
+    # Syncthing's build.go script expects this working directory
+    cd src/github.com/syncthing/syncthing
 
-  doCheck = true;
+    go run build.go -no-upgrade -version v${version} install all
+  '';
 
-  dontInstallSrc = true;
+  installPhase = ''
+    mkdir -p $out/bin
+    cp bin/* $out/bin
+  '';
 
   meta = {
-    homepage = http://syncthing.net/;
-    description = "Replaces Dropbox and BitTorrent Sync with something open, trustworthy and decentralized";
-    license = lib.licenses.mit;
-    maintainers = with lib.maintainers; [ matejc theuni ];
-    platforms = with lib.platforms; unix;
+    homepage = https://www.syncthing.net/;
+    description = "Open Source Continuous File Synchronization";
+    license = stdenv.lib.licenses.mpl20;
+    maintainers = with stdenv.lib.maintainers; [pshendry];
+    platforms = with stdenv.lib.platforms; linux ++ freebsd ++ openbsd ++ netbsd;
   };
 }

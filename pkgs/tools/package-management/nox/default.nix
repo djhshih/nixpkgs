@@ -1,20 +1,18 @@
 { lib, pythonPackages, fetchurl }:
 
-pythonPackages.buildPythonPackage rec {
+pythonPackages.buildPythonApplication rec {
   name = "nox-${version}";
-  version = "0.0.1";
+  version = "0.0.3";
   namePrefix = "";
 
   src = fetchurl {
-    url = "https://pypi.python.org/packages/source/n/nix-nox/nix-nox-${version}.tar.gz";
-    sha256 = "1s1jhickdhym70qrb5h4qxq1mvkpwgdppqpfb2jnpfaf1az6c207";
+    url = "mirror://pypi/n/nix-nox/nix-nox-${version}.tar.gz";
+    sha256 = "0bbd8nyvxwwz56qp82h3bln960bmpy2lczxr00h2jva1gpz5a964";
   };
-
-  patches = [ ./show-trace.patch ];
 
   buildInputs = [ pythonPackages.pbr ];
 
-  pythonPath = with pythonPackages; [
+  propagatedBuildInputs = with pythonPackages; [
       dogpile_cache
       click
       requests2

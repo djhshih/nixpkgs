@@ -1,8 +1,10 @@
 { stdenv, fetchurl, python, makeWrapper, docutils, unzip, hg-git, dulwich
-, guiSupport ? false, tk ? null, curses, cacert }:
+, guiSupport ? false, tk ? null, curses
+, ApplicationServices, cf-private }:
 
 let
-  version = "3.3.3";
+  # if you bump version, update pkgs.tortoisehg too or ping maintainer
+  version = "3.8.2";
   name = "mercurial-${version}";
 in
 
@@ -10,14 +12,17 @@ stdenv.mkDerivation {
   inherit name;
 
   src = fetchurl {
-    url = "http://mercurial.selenic.com/release/${name}.tar.gz";
-    sha256 = "04xfzwb7jabzsfv2r18c3w6vwag7cjrl79xzg5i3mbyb1mzkcid4";
+    url = "https://mercurial-scm.org/release/${name}.tar.gz";
+    sha256 = "1zdz42znd6i7c3nf31j0k6frcs68qyniyvcad8k2a1hlarlv2y6b";
   };
 
   inherit python; # pass it so that the same version can be used in hg2git
   pythonPackages = [ curses ];
 
   buildInputs = [ python makeWrapper docutils unzip ];
+
+  propagatedBuildInputs = stdenv.lib.optionals stdenv.isDarwin
+    [ ApplicationServices cf-private ];
 
   makeFlags = "PREFIX=$(out)";
 
@@ -44,7 +49,7 @@ stdenv.mkDerivation {
       mkdir -p $out/etc/mercurial
       cat >> $out/etc/mercurial/hgrc << EOF
       [web]
-      cacerts = ${cacert}/etc/ssl/certs/ca-bundle.crt
+      cacerts = /etc/ssl/certs/ca-certificates.crt
       EOF
 
       # copy hgweb.cgi to allow use in apache
@@ -63,5 +68,6 @@ stdenv.mkDerivation {
     downloadPage = "http://mercurial.selenic.com/release/";
     license = stdenv.lib.licenses.gpl2;
     maintainers = [ stdenv.lib.maintainers.eelco ];
+    updateWalker = true;
   };
 }

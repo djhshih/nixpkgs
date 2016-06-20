@@ -63,7 +63,8 @@ in {
 
     package = mkOption {
       description = "Confd package to use.";
-      default = pkgs.goPackages.confd;
+      default = pkgs.confd;
+      defaultText = "pkgs.confd";
       type = types.package;
     };
   };
@@ -74,7 +75,7 @@ in {
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
       serviceConfig = {
-        ExecStart = "${cfg.package}/bin/confd";
+        ExecStart = "${cfg.package.bin}/bin/confd";
       };
     };
 

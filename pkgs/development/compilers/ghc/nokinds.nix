@@ -1,12 +1,13 @@
-{ stdenv, fetchgit, ghc, perl, gmp, ncurses, libiconv, autoconf, automake, happy, alex }:
+{ stdenv, fetchgit, bootPkgs, perl, gmp, ncurses, libiconv, autoconf, automake, happy, alex }:
 
 let
+  inherit (bootPkgs) ghc;
 
   buildMK = ''
-    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-libraries="${gmp}/lib"
-    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-includes="${gmp}/include"
-    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-includes="${ncurses}/include"
-    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-libraries="${ncurses}/lib"
+    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-libraries="${gmp.out}/lib"
+    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-includes="${gmp.dev}/include"
+    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-includes="${ncurses.dev}/include"
+    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-libraries="${ncurses.out}/lib"
     DYNAMIC_BY_DEFAULT = NO
     SRC_HC_OPTS        = -H64m -O -fasm
     GhcLibHcOpts       = -O -dcore-lint
@@ -27,18 +28,20 @@ let
 in
 
 stdenv.mkDerivation rec {
-  version = "7.11.20150703";
-  name = "ghc-nokinds-${version}";
-  rev = "887170ac254aaacc2d5e29f2565ac61522fd8f61";
+  version = "7.11.20150826";
+  name = "ghc-${version}"; # We cannot add a "nokinds" tag here; see git comment for details.
+  rev = "5f7f64b7fc879b5ecfd6987ec5565bd90f7c0179";
 
   src = fetchgit {
     url = "https://github.com/goldfirere/ghc.git";
     inherit rev;
-    sha256 = "010x9ckig76sz97s2ss1j1sf70czqx1cn39nj4xbh49m8n2zvsqf";
+    sha256 = "183l4v6aw52r3ydwl8bxg1lh3cwfakb35rpy6mjg23dqmqsynmcn";
   };
 
   postUnpack = ''
     pushd ghc-${builtins.substring 0 7 rev}
+    echo ${version} >VERSION
+    echo ${rev} >GIT_COMMIT_ID
     patchShebangs .
     ./boot
     popd
@@ -55,7 +58,7 @@ stdenv.mkDerivation rec {
 
   configureFlags = [
     "--with-gcc=${stdenv.cc}/bin/cc"
-    "--with-gmp-includes=${gmp}/include" "--with-gmp-libraries=${gmp}/lib"
+    "--with-gmp-includes=${gmp.dev}/include" "--with-gmp-libraries=${gmp.out}/lib"
   ];
 
   enableParallelBuilding = true;
@@ -64,10 +67,14 @@ stdenv.mkDerivation rec {
   # that in turn causes GHCi to abort
   stripDebugFlags = [ "-S" ] ++ stdenv.lib.optional (!stdenv.isDarwin) "--keep-file-symbols";
 
+  passthru = {
+    inherit bootPkgs;
+  };
+
   meta = {
     homepage = "http://haskell.org/ghc";
     description = "The dependently-typed 'nokinds' branch of the Glasgow Haskell Compiler by Richard Eisenberg";
-    maintainers = with stdenv.lib.maintainers; [ ];
+    maintainers = with stdenv.lib.maintainers; [ deepfire ];
     inherit (ghc.meta) license platforms;
   };
 

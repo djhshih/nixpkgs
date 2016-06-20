@@ -1,9 +1,11 @@
-{ stdenv, fetchurl, pkgconfig, zlib, libjpeg, libpng, libtiff, pam, openssl
-, dbus, acl, gmp, xdg_utils
+{ stdenv, fetchurl, pkgconfig, zlib, libjpeg, libpng, libtiff, pam
+, dbus, systemd, acl, gmp, darwin
 , libusb ? null, gnutls ? null, avahi ? null, libpaper ? null
 }:
 
-let version = "2.0.3"; in
+### IMPORTANT: before updating cups, make sure the nixos/tests/printing.nix test
+### works at least for your platform.
+let version = "2.1.3"; in
 
 with stdenv.lib;
 stdenv.mkDerivation {
@@ -13,13 +15,19 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "https://www.cups.org/software/${version}/cups-${version}-source.tar.bz2";
-    sha256 = "10c84ppc9prx6gcyskmm6fh0rks346yryzd356gkg9whhq26fcdw";
+    sha256 = "1lyl3z01xhg9xb9c8m42398c6h9kw8qr6jwiv8bjdsjab11hv9rn";
   };
 
-  buildInputs = [ pkgconfig zlib libjpeg libpng libtiff libusb gnutls avahi libpaper ]
-    ++ optionals stdenv.isLinux [ pam dbus.libs acl xdg_utils ] ;
+  # FIXME: the cups libraries contains some $out/share strings so can't be split.
+  outputs = [ "dev" "out" "man" ]; # TODO: above
 
-  propagatedBuildInputs = [ openssl gmp ];
+  buildInputs = [ pkgconfig zlib libjpeg libpng libtiff libusb gnutls libpaper ]
+    ++ optionals stdenv.isLinux [ avahi pam dbus systemd acl ]
+    ++ optionals stdenv.isDarwin (with darwin; [
+      configd apple_sdk.frameworks.ApplicationServices
+    ]);
+
+  propagatedBuildInputs = [ gmp ];
 
   configureFlags = [
     "--localstatedir=/var"
@@ -33,7 +41,11 @@ stdenv.mkDerivation {
   ] ++ optional (libusb != null) "--enable-libusb"
     ++ optional (gnutls != null) "--enable-ssl"
     ++ optional (avahi != null) "--enable-avahi"
-    ++ optional (libpaper != null) "--enable-libpaper";
+    ++ optional (libpaper != null) "--enable-libpaper"
+    ++ optionals stdenv.isDarwin [
+    "--with-bundledir=$out"
+    "--disable-launchd"
+  ];
 
   installFlags =
     [ # Don't try to write in /var at build time.
@@ -44,7 +56,6 @@ stdenv.mkDerivation {
       # Idem for /etc.
       "PAMDIR=$(out)/etc/pam.d"
       "DBUSDIR=$(out)/etc/dbus-1"
-      "INITDIR=$(out)/etc/rc.d"
       "XINETD=$(out)/etc/xinetd.d"
       "SERVERROOT=$(out)/etc/cups"
       # Idem for /usr.
@@ -54,10 +65,14 @@ stdenv.mkDerivation {
       "CUPS_PRIMARY_SYSTEM_GROUP=root"
     ];
 
-  postInstall =
-    ''
+  enableParallelBuilding = true;
+
+  postInstall = ''
       # Delete obsolete stuff that conflicts with cups-filters.
       rm -rf $out/share/cups/banners $out/share/cups/data/testprint
+
+      mkdir $dev/bin
+      mv $out/bin/cups-config $dev/bin/
 
       # Rename systemd files provided by CUPS
       for f in $out/lib/systemd/system/*; do
@@ -71,13 +86,17 @@ stdenv.mkDerivation {
           mv "$f" "''${f/org\.cups\./}"
         fi
       done
+    '' + optionalString stdenv.isLinux ''
+      # Use xdg-open when on Linux
+      substituteInPlace $out/share/applications/cups.desktop \
+        --replace "Exec=htmlview" "Exec=xdg-open"
     '';
 
   meta = {
     homepage = https://cups.org/;
     description = "A standards-based printing system for UNIX";
     license = licenses.gpl2; # actually LGPL for the library and GPL for the rest
-    maintainers = with maintainers; [ urkud simons jgeerds ];
+    maintainers = with maintainers; [ urkud jgeerds ];
     platforms = platforms.linux;
   };
 }

@@ -108,10 +108,8 @@ with lib;
         subpixel = {
 
           rgba = mkOption {
-            type = types.string // {
-              check = flip elem ["rgb" "bgr" "vrgb" "vbgr" "none"];
-            };
             default = "rgb";
+            type = types.enum ["rgb" "bgr" "vrgb" "vbgr" "none"];
             description = ''
               Subpixel order, one of <literal>none</literal>,
               <literal>rgb</literal>, <literal>bgr</literal>,
@@ -120,10 +118,8 @@ with lib;
           };
 
           lcdfilter = mkOption {
-            type = types.str // {
-              check = flip elem ["none" "default" "light" "legacy"];
-            };
             default = "default";
+            type = types.enum ["none" "default" "light" "legacy"];
             description = ''
               FreeType LCD filter, one of <literal>none</literal>,
               <literal>default</literal>, <literal>light</literal>, or
@@ -131,6 +127,14 @@ with lib;
             '';
           };
 
+        };
+
+        cache32Bit = mkOption {
+          default = false;
+          type = types.bool;
+          description = ''
+            Generate system fonts cache for 32-bit applications.
+          '';
         };
 
       };
@@ -142,7 +146,7 @@ with lib;
   config =
     let fontconfig = config.fonts.fontconfig;
         fcBool = x: "<bool>" + (if x then "true" else "false") + "</bool>";
-        nixosConf = ''
+        renderConf = ''
           <?xml version='1.0'?>
           <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
           <fontconfig>
@@ -168,6 +172,21 @@ with lib;
                 <const>lcd${fontconfig.subpixel.lcdfilter}</const>
               </edit>
             </match>
+
+            ${optionalString (fontconfig.dpi != 0) ''
+            <match target="pattern">
+              <edit name="dpi" mode="assign">
+                <double>${toString fontconfig.dpi}</double>
+              </edit>
+            </match>
+            ''}
+
+          </fontconfig>
+        '';
+        genericAliasConf = ''
+          <?xml version='1.0'?>
+          <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
+          <fontconfig>
 
             <!-- Default fonts -->
             ${optionalString (fontconfig.defaultFonts.sansSerif != []) ''
@@ -201,14 +220,6 @@ with lib;
             </alias>
             ''}
 
-            ${optionalString (fontconfig.dpi != 0) ''
-            <match target="pattern">
-              <edit name="dpi" mode="assign">
-                <double>${toString fontconfig.dpi}</double>
-              </edit>
-            </match>
-            ''}
-
           </fontconfig>
         '';
     in mkIf fontconfig.enable {
@@ -219,24 +230,33 @@ with lib;
       environment.etc."fonts/fonts.conf".source =
         pkgs.makeFontsConf { fontconfig = pkgs.fontconfig_210; fontDirectories = config.fonts.fonts; };
 
-      environment.etc."fonts/conf.d/98-nixos.conf".text = nixosConf;
+      environment.etc."fonts/conf.d/10-nixos-rendering.conf".text = renderConf;
+      environment.etc."fonts/conf.d/60-nixos-generic-alias.conf".text = genericAliasConf;
 
       # Versioned fontconfig > 2.10. Take shared fonts.conf from fontconfig.
       # Otherwise specify only font directories.
       environment.etc."fonts/${pkgs.fontconfig.configVersion}/fonts.conf".source =
-        "${pkgs.fontconfig}/etc/fonts/fonts.conf";
+        "${pkgs.fontconfig.out}/etc/fonts/fonts.conf";
 
       environment.etc."fonts/${pkgs.fontconfig.configVersion}/conf.d/00-nixos.conf".text =
-        ''
+        let
+          cache = fontconfig: pkgs.makeFontsCache { inherit fontconfig; fontDirectories = config.fonts.fonts; };
+        in ''
           <?xml version='1.0'?>
           <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
           <fontconfig>
             <!-- Font directories -->
             ${concatStringsSep "\n" (map (font: "<dir>${font}</dir>") config.fonts.fonts)}
+            <!-- Pre-generated font caches -->
+            <cachedir>${cache pkgs.fontconfig}</cachedir>
+            ${optionalString (pkgs.stdenv.isx86_64 && config.fonts.fontconfig.cache32Bit) ''
+              <cachedir>${cache pkgs.pkgsi686Linux.fontconfig}</cachedir>
+            ''}
           </fontconfig>
         '';
 
-      environment.etc."fonts/${pkgs.fontconfig.configVersion}/conf.d/98-nixos.conf".text = nixosConf;
+      environment.etc."fonts/${pkgs.fontconfig.configVersion}/conf.d/10-nixos-rendering.conf".text = renderConf;
+      environment.etc."fonts/${pkgs.fontconfig.configVersion}/conf.d/60-nixos-generic-alias.conf".text = genericAliasConf;
 
       environment.etc."fonts/${pkgs.fontconfig.configVersion}/conf.d/99-user.conf" = {
         enable = fontconfig.includeUserConf;

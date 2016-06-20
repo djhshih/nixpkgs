@@ -2,7 +2,7 @@
 
 callPackage ./generic.nix (args // {
   baseVersion = "1.10";
-  revision = "9";
-  sha256 = "1wldp9py3qcdgswgxya83c03y6345a6cf3vwz0y41bl1l39jfza8";
+  revision = "12";
+  sha256 = "09xcbrs48c9sgy6cj37qbc69gi6wlkjd6r3fi4zr8xwmj5wkmz5g";
   extraConfigureFlags = "--with-gnump";
 })

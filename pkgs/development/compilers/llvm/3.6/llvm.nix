@@ -12,10 +12,12 @@
 , version
 , zlib
 , compiler-rt_src
+, debugVersion ? false
+, enableSharedLibraries ? !stdenv.isDarwin
 }:
 
 let
-  src = fetch "llvm" "0ypwcqrld91jn0zz4mkdksl2mbb0ds9lh5gf0xkbb81sj4awc01g";
+  src = fetch "llvm" "153vcvj8gvgwakzr4j0kndc0b7wn91c2g1vy2vg24s6spxcc23gn";
 in stdenv.mkDerivation rec {
   name = "llvm-${version}";
 
@@ -27,7 +29,7 @@ in stdenv.mkDerivation rec {
     mv compiler-rt-* $sourceRoot/projects/compiler-rt
   '';
 
-  buildInputs = [ perl groff cmake libxml2 python libffi ] ++ stdenv.lib.optional stdenv.isLinux valgrind;
+  buildInputs = [ perl groff cmake libxml2 python libffi ] /* ++ stdenv.lib.optional stdenv.isLinux valgrind */;
 
   propagatedBuildInputs = [ ncurses zlib ];
 
@@ -38,14 +40,15 @@ in stdenv.mkDerivation rec {
   '';
 
   cmakeFlags = with stdenv; [
-    "-DCMAKE_BUILD_TYPE=Release"
+    "-DCMAKE_BUILD_TYPE=${if debugVersion then "Debug" else "Release"}"
     "-DLLVM_BUILD_TESTS=ON"
     "-DLLVM_ENABLE_FFI=ON"
     "-DLLVM_ENABLE_RTTI=ON"
-  ] ++ stdenv.lib.optionals (!isDarwin) [
+  ] ++ stdenv.lib.optional enableSharedLibraries
     "-DBUILD_SHARED_LIBS=ON"
-    "-DLLVM_BINUTILS_INCDIR=${binutils}/include"
-  ] ++ stdenv.lib.optionals ( isDarwin) [
+    ++ stdenv.lib.optional (!isDarwin)
+    "-DLLVM_BINUTILS_INCDIR=${binutils.dev}/include"
+    ++ stdenv.lib.optionals ( isDarwin) [
     "-DCMAKE_CXX_FLAGS=-stdlib=libc++"
     "-DCAN_TARGET_i386=false"
   ];
@@ -54,10 +57,6 @@ in stdenv.mkDerivation rec {
     rm -fR $out
 
     paxmark m bin/{lli,llvm-rtdyld}
-
-    paxmark m unittests/ExecutionEngine/JIT/JITTests
-    paxmark m unittests/ExecutionEngine/MCJIT/MCJITTests
-    paxmark m unittests/Support/SupportTests
   '';
 
   enableParallelBuilding = true;

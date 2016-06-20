@@ -1,20 +1,12 @@
 { stdenv, fetchurl, cups, libssh, libXpm, nxproxy, openldap, makeWrapper, qt4 }:
 
-let version = "4.0.4.0"; in
 stdenv.mkDerivation rec {
   name = "x2goclient-${version}";
+  version = "4.0.5.1";
 
   src = fetchurl {
     url = "http://code.x2go.org/releases/source/x2goclient/${name}.tar.gz";
-    sha256 = "0mqn4nvq2w7qja5i4vx9fg2spwzl01p0hmfwbjb0mzir03hmrl46";
-  };
-
-  meta = with stdenv.lib; {
-    description = "Graphical NoMachine NX3 remote desktop client";
-    homepage = http://x2go.org/;
-    license = licenses.gpl2;
-    platforms = with platforms; linux;
-    maintainers = with maintainers; [ nckx ];
+    sha256 = "04gdccqywas029a76k3r9zhr2mfn385i9r06cmi8mznxpczrhkl4";
   };
 
   buildInputs = [ cups libssh libXpm nxproxy openldap qt4 ];
@@ -35,4 +27,12 @@ stdenv.mkDerivation rec {
   postInstall = ''
     wrapProgram "$out/bin/x2goclient" --suffix PATH : "${nxproxy}/bin";
   '';
+
+  meta = with stdenv.lib; {
+    description = "Graphical NoMachine NX3 remote desktop client";
+    homepage = http://x2go.org/;
+    license = licenses.gpl2;
+    platforms = platforms.linux;
+    maintainers = with maintainers; [ nckx ];
+  };
 }

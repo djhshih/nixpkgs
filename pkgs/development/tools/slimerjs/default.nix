@@ -3,11 +3,11 @@ let
   s = # Generated upstream information
   rec {
     baseName="slimerjs";
-    version="0.9.6";
+    version="0.10.0";
     name="${baseName}-${version}";
-    hash="0wry296iv63bmvm3qbkbgk42nbs80cbir0kv27v0ah5f6kvjc9cq";
-    url="http://download.slimerjs.org/releases/0.9.6/slimerjs-0.9.6.zip";
-    sha256="0wry296iv63bmvm3qbkbgk42nbs80cbir0kv27v0ah5f6kvjc9cq";
+    hash="1yqs4f90bp8vxa7n8y1a3hi9hd7374hq9qa44xgfb4l5kn6h1f40";
+    url="http://download.slimerjs.org/releases/0.10.0/slimerjs-0.10.0.zip";
+    sha256="1yqs4f90bp8vxa7n8y1a3hi9hd7374hq9qa44xgfb4l5kn6h1f40";
   };
   buildInputs = [
     unzip zip
@@ -16,9 +16,9 @@ in
 stdenv.mkDerivation {
   inherit (s) name version;
   inherit buildInputs;
-   src = fetchurl {
-     inherit (s) url sha256;
-   };
+  src = fetchurl {
+    inherit (s) url sha256;
+  };
   #src = fetchgit {
   #  inherit (s) url sha256 rev;
   #};
@@ -34,7 +34,7 @@ stdenv.mkDerivation {
     echo 'export SLIMERJSLAUNCHER=${firefox}/bin/firefox' >>  "$out/bin/slimerjs"
     echo "'$out/lib/slimerjs/slimerjs' \"\$@\"" >> "$out/bin/slimerjs"
     chmod a+x "$out/bin/slimerjs"
-    sed -e 's@MaxVersion=3[0-9][.]@MaxVersion=40.@' -i "$out/lib/slimerjs/application.ini"
+    sed -e 's@MaxVersion=[34][0-9][.]@MaxVersion=50.@' -i "$out/lib/slimerjs/application.ini"
   '';
   meta = {
     inherit (s) version;

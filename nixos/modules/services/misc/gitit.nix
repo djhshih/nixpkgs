@@ -8,6 +8,8 @@ let
 
   homeDir = "/var/lib/gitit";
 
+  toYesNo = b: if b then "yes" else "no";
+
   gititShared = with cfg.haskellPackages; gitit + "/share/" + pkgs.stdenv.system + "-" + ghc.name + "/" + gitit.pname + "-" + gitit.version;
 
   gititWithPkgs = hsPkgs: extras: hsPkgs.ghcWithPackages (self: with self; [ gitit ] ++ (extras self));
@@ -17,9 +19,6 @@ let
   in writeScript "gitit" ''
     #!${stdenv.shell}
     cd $HOME
-    export PATH="${makeSearchPath "bin" (
-      [ git curl ] ++ (if cfg.pdfExport == "yes" then [texLiveFull] else [])
-      )}:$PATH";
     export NIX_GHC="${env}/bin/ghc"
     export NIX_GHCPKG="${env}/bin/ghc-pkg"
     export NIX_GHC_DOCDIR="${env}/share/doc/ghc/html"
@@ -27,11 +26,7 @@ let
     ${env}/bin/gitit -f ${configFile}
   '';
 
-  gititOptions = let
-
-    yesNo = types.enum [ "yes" "no" ];
-
-  in {
+  gititOptions = {
 
       enable = mkOption {
         type = types.bool;
@@ -105,7 +100,7 @@ let
       };
 
       authenticationMethod = mkOption {
-        type = types.enum [ "form" "http" "generic"];
+        type = types.enum [ "form" "http" "generic" "github" ];
         default = "form";
         description = ''
           'form' means that users will be logged in and registered using forms
@@ -204,8 +199,8 @@ let
       };
 
       showLhsBirdTracks = mkOption {
-        type = yesNo;
-        default = "no";
+        type = types.bool;
+        default = false;
         description = ''
           Specifies whether to show Haskell code blocks in "bird style", with
           "> " at the beginning of each line.
@@ -286,8 +281,8 @@ let
       };
 
       tableOfContents = mkOption {
-        type = yesNo;
-        default = "yes";
+        type = types.bool;
+        default = true;
         description = ''
           Specifies whether to print a tables of contents (with links to
           sections) on each wiki page.
@@ -295,23 +290,19 @@ let
       };
 
       plugins = mkOption {
-        type = types.path;
-        default = gititShared + "/plugins/Dot.hs";
+        type = with types; listOf str;
+        default = [ (gititShared + "/plugins/Dot.hs") ];
         description = ''
-          Specifies a list of plugins to load.  Plugins may be specified either
-          by their path or by their module name.  If the plugin name starts
+          Specifies a list of plugins to load. Plugins may be specified either
+          by their path or by their module name. If the plugin name starts
           with Gitit.Plugin., gitit will assume that the plugin is an installed
           module and will not try to find a source file.
-          Examples:
-          plugins: plugins/DotPlugin.hs, CapitalizeEmphasisPlugin.hs
-          plugins: plugins/DotPlugin
-          plugins: Gitit.Plugin.InterwikiLinks
         '';
       };
 
       useCache = mkOption {
-        type = yesNo;
-        default = "no";
+        type = types.bool;
+        default = false;
         description = ''
           Specifies whether to cache rendered pages.  Note that if use-feed is
           selected, feeds will be cached regardless of the value of use-cache.
@@ -342,14 +333,14 @@ let
       };
 
       debugMode = mkOption {
-        type = yesNo;
-        default = "no";
+        type = types.bool;
+        default = false;
         description = "Causes debug information to be logged while gitit is running.";
       };
 
       compressResponses = mkOption {
-        type = yesNo;
-        default = "yes";
+        type = types.bool;
+        default = true;
         description = "Specifies whether HTTP responses should be compressed.";
       };
 
@@ -361,16 +352,18 @@ let
           line of the file should contain two fields, separated by whitespace.
           The first field is the mime type, the second is a file extension.
           For example:
-          video/x-ms-wmx                    wmx
+<programlisting>
+video/x-ms-wmx  wmx
+</programlisting>
           If the file is not found, some simple defaults will be used.
         '';
       };
 
       useReCaptcha = mkOption {
-        type = yesNo;
-        default = "no";
+        type = types.bool;
+        default = false;
         description = ''
-          If "yes", causes gitit to use the reCAPTCHA service
+          If true, causes gitit to use the reCAPTCHA service
           (http://recaptcha.net) to prevent bots from creating accounts.
         '';
       };
@@ -475,8 +468,8 @@ let
       };
 
       useFeed = mkOption {
-        type = yesNo;
-        default = "no";
+        type = types.bool;
+        default = false;
         description = ''
           Specifies whether an ATOM feed should be enabled (for the site and
           for individual pages).
@@ -488,19 +481,19 @@ let
         default = null;
         description = ''
           The base URL of the wiki, to be used in constructing feed IDs and RPX
-          token_urls.  Set this if use-feed is 'yes' or authentication-method
+          token_urls.  Set this if useFeed is false or authentication-method
           is 'rpx'.
         '';
       };
 
       absoluteUrls = mkOption {
-        type = yesNo;
-        default = "no";
+        type = types.bool;
+        default = false;
         description = ''
           Make wikilinks absolute with respect to the base-url.  So, for
           example, in a wiki served at the base URL '/wiki', on a page
           Sub/Page, the wikilink '[Cactus]()' will produce a link to
-          '/wiki/Cactus' if absolute-urls is 'yes', and a relative link to
+          '/wiki/Cactus' if absoluteUrls is true, and a relative link to
           'Cactus' (referring to '/wiki/Sub/Cactus') if absolute-urls is 'no'.
         '';
       };
@@ -518,10 +511,10 @@ let
       };
 
       pdfExport = mkOption {
-        type = yesNo;
-        default = "no";
+        type = types.bool;
+        default = false;
         description = ''
-          If yes, PDF will appear in export options. PDF will be created using
+          If true, PDF will appear in export options. PDF will be created using
           pdflatex, which must be installed and in the path. Note that PDF
           exports create significant additional server load.
         '';
@@ -541,12 +534,48 @@ let
       };
 
       xssSanitize = mkOption {
-        type = yesNo;
-        default = "yes";
+        type = types.bool;
+        default = true;
         description = ''
-          If yes, all HTML (including that produced by pandoc) is filtered
+          If true, all HTML (including that produced by pandoc) is filtered
           through xss-sanitize.  Set to no only if you trust all of your users.
         '';
+      };
+
+      oauthClientId = mkOption {
+        type = with types; nullOr str;
+        default = null;
+        description = "OAuth client ID";
+      };
+
+      oauthClientSecret = mkOption {
+        type = with types; nullOr str;
+        default = null;
+        description = "OAuth client secret";
+      };
+
+      oauthCallback = mkOption {
+        type = with types; nullOr str;
+        default = null;
+        description = "OAuth callback URL";
+      };
+
+      oauthAuthorizeEndpoint = mkOption {
+        type = with types; nullOr str;
+        default = null;
+        description = "OAuth authorize endpoint";
+      };
+
+      oauthAccessTokenEndpoint = mkOption {
+        type = with types; nullOr str;
+        default = null;
+        description = "OAuth access token endpoint";
+      };
+
+      githubOrg = mkOption {
+        type = with types; nullOr str;
+        default = null;
+        description = "Github organization";
       };
   };
 
@@ -564,7 +593,7 @@ let
     default-page-type: ${cfg.defaultPageType}
     math: ${cfg.math}
     mathjax-script: ${cfg.mathJaxScript}
-    show-lhs-bird-tracks: ${cfg.showLhsBirdTracks}
+    show-lhs-bird-tracks: ${toYesNo cfg.showLhsBirdTracks}
     templates-dir: ${cfg.templatesDir}
     log-file: ${cfg.logFile}
     log-level: ${cfg.logLevel}
@@ -572,16 +601,16 @@ let
     no-delete: ${cfg.noDelete}
     no-edit: ${cfg.noEdit}
     default-summary: ${cfg.defaultSummary}
-    table-of-contents: ${cfg.tableOfContents}
-    plugins: ${cfg.plugins}
-    use-cache: ${cfg.useCache}
+    table-of-contents: ${toYesNo cfg.tableOfContents}
+    plugins: ${concatStringsSep "," cfg.plugins}
+    use-cache: ${toYesNo cfg.useCache}
     cache-dir: ${cfg.cacheDir}
     max-upload-size: ${cfg.maxUploadSize}
     max-page-size: ${cfg.maxPageSize}
-    debug-mode: ${cfg.debugMode}
-    compress-responses: ${cfg.compressResponses}
+    debug-mode: ${toYesNo cfg.debugMode}
+    compress-responses: ${toYesNo cfg.compressResponses}
     mime-types-file: ${cfg.mimeTypesFile}
-    use-recaptcha: ${cfg.useReCaptcha}
+    use-recaptcha: ${toYesNo cfg.useReCaptcha}
     recaptcha-private-key: ${toString cfg.reCaptchaPrivateKey}
     recaptcha-public-key: ${toString cfg.reCaptchaPublicKey}
     access-question: ${cfg.accessQuestion}
@@ -590,14 +619,22 @@ let
     rpx-key: ${toString cfg.rpxKey}
     mail-command: ${cfg.mailCommand}
     reset-password-message: ${cfg.resetPasswordMessage}
-    use-feed: ${cfg.useFeed}
+    use-feed: ${toYesNo cfg.useFeed}
     base-url: ${toString cfg.baseUrl}
-    absolute-urls: ${cfg.absoluteUrls}
+    absolute-urls: ${toYesNo cfg.absoluteUrls}
     feed-days: ${toString cfg.feedDays}
     feed-refresh-time: ${toString cfg.feedRefreshTime}
-    pdf-export: ${cfg.pdfExport}
+    pdf-export: ${toYesNo cfg.pdfExport}
     pandoc-user-data: ${toString cfg.pandocUserData}
-    xss-sanitize: ${cfg.xssSanitize}
+    xss-sanitize: ${toYesNo cfg.xssSanitize}
+
+    [Github]
+    oauthclientid: ${toString cfg.oauthClientId}
+    oauthclientsecret: ${toString cfg.oauthClientSecret}
+    oauthcallback: ${toString cfg.oauthCallback}
+    oauthauthorizeendpoint: ${toString cfg.oauthAuthorizeEndpoint}
+    oauthaccesstokenendpoint: ${toString cfg.oauthAccessTokenEndpoint}
+    github-org: ${toString cfg.githubOrg}
   '';
 
 in
@@ -625,8 +662,16 @@ in
       description = "Git and Pandoc Powered Wiki";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
+      path = with pkgs; [ curl ]
+             ++ optional cfg.pdfExport texLiveFull
+	     ++ optional (cfg.repositoryType == "darcs") darcs
+	     ++ optional (cfg.repositoryType == "mercurial") mercurial
+	     ++ optional (cfg.repositoryType == "git") git;
 
-      preStart = with cfg; ''
+      preStart = let
+        gm = "gitit@${config.networking.hostName}";
+      in
+      with cfg; ''
         chown ${uid}:${gid} -R ${homeDir}
         for dir in ${repositoryPath} ${staticDir} ${templatesDir} ${cacheDir}
         do
@@ -638,14 +683,35 @@ in
           fi
         done
         cd ${repositoryPath}
-        if [ ! -d  .git ]
-        then
-          ${pkgs.git}/bin/git init
-          ${pkgs.git}/bin/git config user.email "gitit@${config.networking.hostName}"
-          ${pkgs.git}/bin/git config user.name "gitit"
-          chown ${uid}:${gid} -R {repositoryPath}
-        fi
-        cd -
+	${
+	  if repositoryType == "darcs" then
+	  ''
+	  if [ ! -d _darcs ]
+	  then
+	    ${pkgs.darcs}/bin/darcs initialize
+	    echo "${gm}" > _darcs/prefs/email
+	  ''
+	  else if repositoryType == "mercurial" then
+	  ''
+	  if [ ! -d .hg ]
+	  then
+	    ${pkgs.mercurial}/bin/hg init
+	    cat >> .hg/hgrc <<NAMED
+[ui]
+username = gitit ${gm}
+NAMED
+	  ''
+	  else
+	  ''
+	  if [ ! -d  .git ]
+          then
+            ${pkgs.git}/bin/git init
+            ${pkgs.git}/bin/git config user.email "${gm}"
+            ${pkgs.git}/bin/git config user.name "gitit"
+	  ''}
+          chown ${uid}:${gid} -R ${repositoryPath}
+          fi
+	cd -
       '';
 
       serviceConfig = {
@@ -656,4 +722,3 @@ in
     };
   };
 }
-

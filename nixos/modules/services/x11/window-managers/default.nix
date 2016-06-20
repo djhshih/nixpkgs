@@ -11,9 +11,12 @@ in
     ./afterstep.nix
     ./bspwm.nix
     ./compiz.nix
+    ./dwm.nix
+    ./exwm.nix
     ./fluxbox.nix
     ./herbstluftwm.nix
     ./i3.nix
+    ./jwm.nix
     ./metacity.nix
     ./openbox.nix
     ./notion.nix
@@ -25,6 +28,7 @@ in
     ./windowmaker.nix
     ./wmii.nix
     ./xmonad.nix
+    ./qtile.nix
     ./none.nix ];
 
   options = {

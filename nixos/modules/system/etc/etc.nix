@@ -14,6 +14,7 @@ let
     builder = ./make-etc.sh;
 
     preferLocalBuild = true;
+    allowSubstitutes = false;
 
     /* !!! Use toXML. */
     sources = map (x: x.source) etc';
@@ -35,7 +36,7 @@ in
       type = types.loaOf types.optionSet;
       default = {};
       example = literalExample ''
-        { hosts =
+        { example-configuration-file =
             { source = "/nix/store/.../etc/dir/file.conf.example";
               mode = "0440";
             };
@@ -111,8 +112,9 @@ in
 
           config = {
             target = mkDefault name;
-            source = mkIf (config.text != null)
-              (mkDefault (pkgs.writeText "etc-file" config.text));
+            source = mkIf (config.text != null) (
+              let name' = "etc-" + baseNameOf name;
+              in mkDefault (pkgs.writeText name' config.text));
           };
 
         });

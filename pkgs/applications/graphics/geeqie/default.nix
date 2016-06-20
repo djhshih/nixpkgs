@@ -4,11 +4,11 @@
 
 stdenv.mkDerivation rec {
   name = "geeqie-${version}";
-  version = "1.2";
+  version = "1.2.3";
 
   src = fetchurl {
-    url = "mirror://debian/pool/main/g/geeqie/geeqie_${version}.orig.tar.gz";
-    sha256 = "0wkcpyh3f6ig36x1q6h9iqgq225w37visip48m72j8rpghmv1rn3";
+    url = "http://geeqie.org/${name}.tar.xz";
+    sha256 = "2629bf33a9070fad4804b1ef051c3bf8a8fdad3bba4e6188dc20588185003248";
   };
 
   preConfigure = "./autogen.sh";

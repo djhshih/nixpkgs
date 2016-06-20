@@ -8,6 +8,10 @@ stdenv.mkDerivation rec {
     sha256 = "1998v2kcs288d3y7kfxpvl369nqi06zbbvjzafyvyl3pr7bajj1s";
   };
 
+  outputs = [ "out" "doc" ];
+
+  enableParallelBuilding = false;
+
   buildInputs = [ ghostscript ];
   nativeBuildInputs = [ perl ];
 
@@ -28,13 +32,12 @@ stdenv.mkDerivation rec {
     '';
   };
 
+  # Remove example output with (random?) colors and creation date
+  # to avoid non-determinism in the output.
   postInstall = ''
-      # Remove example output with (random?) colors to 
-      # avoid non-determinism in the output
-      rm $out/share/doc/${name}/examples/hdtbl/*color*ps
-      # Remove creation date
-      find $out/share/doc/${name} -type f -print0 | xargs -0 sed -i -e 's/%%CreationDate: .*//'
-    '';
+    rm $doc/share/doc/groff/examples/hdtbl/*color*ps
+    find $doc/share/doc/groff/ -type f -print0 | xargs -0 sed -i -e 's/%%CreationDate: .*//'
+  '';
 
   meta = with stdenv.lib; {
     homepage = http://www.gnu.org/software/groff/;

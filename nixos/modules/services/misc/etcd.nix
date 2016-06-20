@@ -77,11 +77,11 @@ in {
       default = {};
       example = literalExample ''
         {
-          "CORS": "*",
-          "NAME": "default-name",
-          "MAX_RESULT_BUFFER": "1024",
-          "MAX_CLUSTER_SIZE": "9",
-          "MAX_RETRY_ATTEMPTS": "3"
+          "CORS" = "*";
+          "NAME" = "default-name";
+          "MAX_RESULT_BUFFER" = "1024";
+          "MAX_CLUSTER_SIZE" = "9";
+          "MAX_RETRY_ATTEMPTS" = "3";
         }
       '';
     };
@@ -114,21 +114,14 @@ in {
       }) // (mapAttrs' (n: v: nameValuePair "ETCD_${n}" v) cfg.extraConf);
 
       serviceConfig = {
-        ExecStart = "${pkgs.etcd}/bin/etcd";
+        Type = "notify";
+        ExecStart = "${pkgs.etcd.bin}/bin/etcd";
         User = "etcd";
         PermissionsStartOnly = true;
       };
       preStart = ''
         mkdir -m 0700 -p ${cfg.dataDir}
         if [ "$(id -u)" = 0 ]; then chown etcd ${cfg.dataDir}; fi
-      '';
-      postStart = ''
-        until ${pkgs.etcdctl}/bin/etcdctl set /nixos/state 'up'; do
-          sleep 1;
-        done
-        until ${pkgs.etcdctl}/bin/etcdctl get /nixos/state | grep up; do
-          sleep 1;
-        done
       '';
     };
 

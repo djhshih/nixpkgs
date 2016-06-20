@@ -39,6 +39,8 @@ stdenv.mkDerivation {
     mkdir -p $out/share/texmf
     mkdir -p $out/share/texmf-dist
     gunzip < $texmf | (cd $out/share/texmf-dist && tar xvf -)
+
+    substituteInPlace ./tetex-src-3.0/configure --replace /usr/bin/install $(type -P install)
   '';
 
   meta = with stdenv.lib; {
@@ -46,7 +48,7 @@ stdenv.mkDerivation {
     homepage     = http://www.tug.org/tetex/;
     matintainers = with maintainers; [ lovek323 ];
     platforms    = platforms.unix;
-    hydraPlatforms = platforms.linux;
+    hydraPlatforms = [];
   };
 }
 

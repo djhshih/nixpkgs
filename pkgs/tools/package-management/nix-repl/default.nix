@@ -1,6 +1,6 @@
 { lib, stdenv, fetchFromGitHub, nix, readline, boehmgc }:
 
-let rev = "45c6405a30bd1b2cb8ad6a94b23be8b10cf52069"; in
+let rev = "8a2f5f0607540ffe56b56d52db544373e1efb980"; in
 
 stdenv.mkDerivation {
   name = "nix-repl-${lib.getVersion nix}-${lib.substring 0 7 rev}";
@@ -9,23 +9,22 @@ stdenv.mkDerivation {
     owner = "edolstra";
     repo = "nix-repl";
     inherit rev;
-    sha256 = "0c6sifpz8j898xznvy9dvm44w4nysqprrhs553in19jwwkf7kryp";
+    sha256 = "0cjablz01i0g9smnavhf86imwx1f9mnh5flax75i615ml71gsr88";
   };
 
   buildInputs = [ nix readline ];
 
-  buildPhase = "true";
+  dontBuild = true;
 
   # FIXME: unfortunate cut&paste.
-  installPhase =
-    ''
-      mkdir -p $out/bin
-      $CXX -O3 -Wall -std=c++0x \
-        -o $out/bin/nix-repl nix-repl.cc \
-        -I${nix}/include/nix \
-        -lnixformat -lnixutil -lnixstore -lnixexpr -lnixmain -lreadline -lgc \
-        -DNIX_VERSION=\"${(builtins.parseDrvName nix.name).version}\"
-    '';
+  installPhase = ''
+    mkdir -p $out/bin
+    $CXX -O3 -Wall -std=c++0x \
+      -o $out/bin/nix-repl nix-repl.cc \
+      -I${nix}/include/nix \
+      -lnixformat -lnixutil -lnixstore -lnixexpr -lnixmain -lreadline -lgc \
+      -DNIX_VERSION=\"${(builtins.parseDrvName nix.name).version}\"
+  '';
 
   meta = {
     homepage = https://github.com/edolstra/nix-repl;

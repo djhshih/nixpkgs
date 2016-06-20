@@ -2,23 +2,22 @@
 
 stdenv.mkDerivation rec {
   name = "pax-utils-${version}";
-  version = "1.0.3";
+  version = "1.1.6";
 
   src = fetchurl {
-    url = "http://dev.gentoo.org/~vapier/dist/${name}.tar.xz";
-    sha256 = "0w2nddgany3s0znyj6zizlvn8y5vba9x49jm5nliv13p3x7ajdc5";
+    url = "https://dev.gentoo.org/~vapier/dist/${name}.tar.xz";
+    sha256 = "04hvsizzspfzfq6hhfif7ya9nwsc0cs6z6n2bq1zfh7agd8nqhzm";
   };
 
   makeFlags = [
-    "DESTDIR=$(out)"
     "PREFIX=$(out)"
   ];
 
   meta = with stdenv.lib; {
     description = "A suite of tools for PaX/grsecurity";
-    homepage    = "http://dev.gentoo.org/~vapier/dist/";
+    homepage    = "https://dev.gentoo.org/~vapier/dist/";
     license     = licenses.gpl2;
     platforms   = platforms.linux;
-    maintainers = with maintainers; [ thoughtpolice wizeman ];
+    maintainers = with maintainers; [ thoughtpolice ];
   };
 }

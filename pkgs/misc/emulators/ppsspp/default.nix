@@ -1,31 +1,35 @@
-{ stdenv, fetchgit, zlib, libpng, qt4, pkgconfig
+{ stdenv, fetchgit, zlib, libpng, qt4, qmake4Hook, pkgconfig
 , withGamepads ? true, SDL # SDL is used for gamepad functionality
 }:
 
+assert withGamepads -> (SDL != null);
+
 let
-  version = "0.9.9.1";
+  version = "1.1.0";
   fstat = x: fn: "-D" + fn + "=" + (if x then "ON" else "OFF");
-in stdenv.mkDerivation {
+in
+with stdenv.lib;
+stdenv.mkDerivation rec{
   name = "PPSSPP-${version}";
 
   src = fetchgit {
     url = "https://github.com/hrydgard/ppsspp.git";
-    sha256 = "0fdbda0b4dfbecacd01850f1767e980281fed4cc34a21df26ab3259242d8c352";
-    rev = "bf709790c4fed9cd211f755acaa650ace0f7555a";
+    rev = "8c8e5de89d52b8bcb968227d96cbf049d04d1241";
     fetchSubmodules = true;
+    sha256 = "1q21qskzni0nvz2yi2m17gjh4i9nrs2l4fm4y2dww9m29xpvzw3x";
   };
 
-  buildInputs = [ zlib libpng pkgconfig qt4 ]
+  buildInputs = [ zlib libpng pkgconfig qt4 qmake4Hook ]
                 ++ (if withGamepads then [ SDL ] else [ ]);
 
-  configurePhase = "cd Qt && qmake PPSSPPQt.pro";
+  preConfigure = "cd Qt";
   installPhase = "mkdir -p $out/bin && cp ppsspp $out/bin";
 
-  meta = with stdenv.lib; {
+  meta = {
     homepage = "http://www.ppsspp.org/";
     description = "A PSP emulator, the Qt4 version";
     license = licenses.gpl2Plus;
-    maintainers = [ maintainers.fuuzetsu ];
+    maintainers = [ maintainers.fuuzetsu maintainers.AndersonTorres ];
     platforms = platforms.linux ++ platforms.darwin ++ platforms.cygwin;
   };
 }

@@ -1,13 +1,15 @@
-{ stdenv, fetchurl, ... } @ args:
+{ stdenv, fetchurl, perl, buildLinux, ... } @ args:
 
 import ./generic.nix (args // rec {
-  version = "3.12.44";
+  version = "3.12.57";
   extraMeta.branch = "3.12";
 
   src = fetchurl {
     url = "mirror://kernel/linux/kernel/v3.x/linux-${version}.tar.xz";
-    sha256 = "05fyb49ibijq2iv4x25m5a77n8609b4lz8x8n8wfkdywm13479h8";
+    sha256 = "0qv88rvi0n45z3888w2gis35lxdx34qg2p7c2cac2szbrzv664s8";
   };
+
+  kernelPatches = args.kernelPatches;
 
   features.iwlwifi = true;
   features.efiBootStub = true;

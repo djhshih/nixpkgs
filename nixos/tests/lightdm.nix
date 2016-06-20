@@ -22,7 +22,8 @@ import ./make-test.nix ({ pkgs, ...} : {
     $machine->waitForText(qr/${user.description}/);
     $machine->screenshot("lightdm");
     $machine->sendChars("${user.password}\n");
-    $machine->waitForText(qr/^\d{2}(?::\d{2}){2} (?:AM|PM)$/m);
-    $machine->screenshot("session");
+    $machine->waitForFile("/home/alice/.Xauthority");
+    $machine->succeed("xauth merge ~alice/.Xauthority");
+    $machine->waitForWindow("^IceWM ");
   '';
 })

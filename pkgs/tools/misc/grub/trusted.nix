@@ -1,5 +1,6 @@
 { stdenv, fetchurl, fetchgit, autogen, flex, bison, python, autoconf, automake
 , gettext, ncurses, libusb, freetype, qemu, devicemapper
+, for_HP_laptop ? false
 }:
 
 with stdenv.lib;
@@ -11,7 +12,7 @@ let
 
   inPCSystems = any (system: stdenv.system == system) (mapAttrsToList (name: _: name) pcSystems);
 
-  version = "2.0-git-2015-07-04";
+  version = if for_HP_laptop then "1.2.1" else "1.2.0";
 
   unifont_bdf = fetchurl {
     url = "http://unifoundry.com/unifont-5.1.20080820.bdf.gz";
@@ -25,16 +26,22 @@ let
 
   };
 
-in (
+in
 
 stdenv.mkDerivation rec {
-  name = "trustedGRUB-${version}";
+  name = "trustedGRUB2-${version}";
 
-  src = fetchgit {
-    url = "https://github.com/Sirrix-AG/TrustedGRUB2";
-    rev = "1865d07bdef7f39916790c77103fb85e99de14a4";
-    sha256 = "e6bd9edfeb653e98e585fd691a31533b649b2fca1f4a903c70f6ea371014c9f7";
-  };
+  src = if for_HP_laptop
+        then fetchgit {
+          url = "https://github.com/Sirrix-AG/TrustedGRUB2";
+          rev = "ab483d389bda3115ca0ae4202fd71f2e4a31ad41";
+          sha256 = "1760d9hsnqkdvlag9nn8f613mqhnsxmidgvdkpmb37b0yi7p6lhz";
+        }
+        else fetchgit {
+          url = "https://github.com/Sirrix-AG/TrustedGRUB2";
+          rev = "1ff54a5fbe02ea01df5a7de59b1e0201e08d4f76";
+          sha256 = "0yrfwx67gpg9gij5raq0cfbx3jj769lkg3diqgb7i9n86hgcdh4k";
+        };
 
   nativeBuildInputs = [ autogen flex bison python autoconf automake ];
   buildInputs = [ ncurses libusb freetype gettext devicemapper ]
@@ -89,4 +96,4 @@ stdenv.mkDerivation rec {
     license = licenses.gpl3Plus;
     platforms = platforms.gnu;
   };
-})
+}

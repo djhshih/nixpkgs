@@ -1,12 +1,14 @@
 { stdenv, fetchgit, unzip, firefox, makeWrapper }:
 
-stdenv.mkDerivation {
-  name = "conkeror-1.0pre-20150319";
-
+stdenv.mkDerivation rec {
+  pkgname = "conkeror";
+  version = "1.0pre-20160130";
+  name = "${pkgname}-${version}";
+ 
   src = fetchgit {
     url = git://repo.or.cz/conkeror.git;
-    rev = "6450632b3f0c315f79e7a9856658083fe8fc9c29";
-    sha256 = "18cqz1n2n6aimmgd69mdrgmkjf4207k7yz11wihka6b5z1hfiv64";
+    rev = "3e4732cd0d15aa70121fe0a0403103b777c964bf";
+    sha256 = "1299b1kdfd2vip3w02jzvj2i8scjpsvpx19d2c8ms2pizz7xxmp4";
   };
 
   buildInputs = [ unzip makeWrapper ];
@@ -32,6 +34,6 @@ stdenv.mkDerivation {
     homepage = http://conkeror.org/;
     license = with licenses; [ mpl11 gpl2 lgpl21 ];
     maintainers = with maintainers; [ astsmtl chaoflow ];
-    platforms = with platforms; linux;
+    platforms = platforms.linux;
   };
 }

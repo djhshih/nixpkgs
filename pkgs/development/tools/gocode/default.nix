@@ -1,27 +1,15 @@
-{ lib, goPackages, fetchFromGitHub }:
-
-with goPackages;
+{ stdenv, lib, buildGoPackage, fetchgit, fetchhg, fetchbzr, fetchsvn }:
 
 buildGoPackage rec {
-  rev = "9b760fdb16f18eafbe0cd274527efd2bd89dfa78";
-  name = "gocode-${lib.strings.substring 0 7 rev}";
+  name = "gocode-${version}";
+  version = "20150904-${stdenv.lib.strings.substring 0 7 rev}";
+  rev = "680a0fbae5119fb0dbea5dca1d89e02747a80de0";
+  
   goPackagePath = "github.com/nsf/gocode";
-  src = fetchFromGitHub {
+
+  src = fetchgit {
     inherit rev;
-    owner = "nsf";
-    repo = "gocode";
-    sha256 = "0d1wl0x8jkaav6lcfzs70cr6gy0p88cbk5n3p19l6d0h9xz464ax";
-  };
-
-  subPackages = [ "./" ];
-
-  dontInstallSrc = true;
-
-  meta = with lib; {
-    description = "An autocompletion daemon for the Go programming language";
-    homepage = https://github.com/nsf/gocode;
-    license = licenses.mit;
-    maintainers = with maintainers; [ cstrahan ];
-    platforms = platforms.unix;
+    url = "https://github.com/nsf/gocode";
+    sha256 = "1ay2xakz4bcn8r3ylicbj753gjljvv4cj9l4wfly55cj1vjybjpv";
   };
 }

@@ -1,31 +1,36 @@
 { stdenv, fetchurl, zlib, bzip2, pkgconfig, curl, lzma, gettext
-, sdlClient ? true, SDL, SDL_mixer, SDL_image, SDL_ttf, SDL_gfx, freetype
+, sdlClient ? true, SDL, SDL_mixer, SDL_image, SDL_ttf, SDL_gfx, freetype, fluidsynth
 , gtkClient ? false, gtk
 , server ? true, readline }:
 
 let
   inherit (stdenv.lib) optional optionals;
-  client = sdlClient || gtkClient;
 
   sdlName = if sdlClient then "-sdl" else "";
   gtkName = if gtkClient then "-gtk" else "";
 
-  baseName = "freeciv-2.4.0";
+  name = "freeciv";
+  version = "2.5.3";
 in
 stdenv.mkDerivation {
-  name = baseName + sdlName + gtkName;
+  name = "${name}${sdlName}${gtkName}-${version}";
 
   src = fetchurl {
-    url = "mirror://sourceforge/freeciv/${baseName}.tar.bz2";
-    sha256 = "1bc01pyihsrby6w95n49gi90ggp40dyxsy4kmlmwcakxfxprwakv";
+    url = "mirror://sourceforge/freeciv/${name}-${version}.tar.bz2";
+    sha256 = "0p40bpkhbldsnlqdvfn3qd2vzadxfrfsf1r57x1akwabqs0h62s8";
   };
 
   nativeBuildInputs = [ pkgconfig ];
 
   buildInputs = [ zlib bzip2 curl lzma gettext ]
-    ++ optionals sdlClient [ SDL SDL_mixer SDL_image SDL_ttf SDL_gfx freetype ]
-    ++ optional gtkClient gtk
+    ++ optionals sdlClient [ SDL SDL_mixer SDL_image SDL_ttf SDL_gfx freetype fluidsynth ]
+    ++ optionals gtkClient [ gtk ]
     ++ optional server readline;
+
+  configureFlags = []
+    ++ optional sdlClient "--enable-client=sdl"
+    ++ optional (!gtkClient) "--enable-fcmp=cli"
+    ++ optional (!server) "--disable-server";
 
   meta = with stdenv.lib; {
     description = "Multiplayer (or single player), turn-based strategy game";
@@ -41,6 +46,6 @@ stdenv.mkDerivation {
     license = licenses.gpl2;
 
     maintainers = with maintainers; [ pierron ];
-    platforms = with platforms; linux;
+    platforms = platforms.linux;
   };
 }

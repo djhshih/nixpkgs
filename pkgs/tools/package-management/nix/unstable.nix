@@ -5,11 +5,11 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "nix-1.9pre4153_b64988b";
+  name = "nix-1.9pre4100_4bbcfaf";
 
   src = fetchurl {
-    url = "http://hydra.nixos.org/build/22838666/download/4/${name}.tar.xz";
-    sha256 = "51b4870305724aa7b26c92b43cb22a0e9b6798ac2534db493079bfc383244e31";
+    url = "http://hydra.nixos.org/build/21565942/download/4/${name}.tar.xz";
+    sha256 = "1jcy0n8mi17k5vk89vammfh74lvsgnm4gjsk23cq1shspjnbbgxs";
   };
 
   nativeBuildInputs = [ perl pkgconfig ];
@@ -22,8 +22,8 @@ stdenv.mkDerivation rec {
   # would end up using the wrong bzip2 when cross-compiling.
   # XXX: The right thing would be to reinstate `--with-bzip2' in Nix.
   postUnpack =
-    '' export CPATH="${bzip2}/include"
-       export LIBRARY_PATH="${bzip2}/lib"
+    '' export CPATH="${bzip2.dev}/include"
+       export LIBRARY_PATH="${bzip2.out}/lib"
        export CXXFLAGS="-Wno-error=reserved-user-defined-literal"
     '';
 

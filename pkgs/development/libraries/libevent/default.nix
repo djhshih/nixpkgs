@@ -1,22 +1,20 @@
-{ stdenv, fetchFromGitHub, autoreconfHook, python, findutils }:
+{ stdenv, fetchurl, autoreconfHook, openssl, python, findutils }:
 
 let version = "2.0.22"; in
 stdenv.mkDerivation {
   name = "libevent-${version}";
 
-  src = fetchFromGitHub {
-    owner = "libevent";
-    repo = "libevent";
-    rev = "release-${version}-stable";
-    sha256 = "1x2437af9j870i7l37dav1i2g9z93lbz406kyimx4nq5qcx5463p";
+  src = fetchurl {
+    url = "mirror://sourceforge/levent/libevent-${version}-stable.tar.gz";
+    sha256 = "18qz9qfwrkakmazdlwxvjmw8p76g70n3faikwvdwznns1agw9hki";
   };
+  postPatch = "patchShebangs event_rpcgen.py";
+
+  outputs = [ "dev" "out" ];
+  outputBin = "dev";
 
   nativeBuildInputs = [ autoreconfHook ];
-  buildInputs = [ python ] ++ stdenv.lib.optional stdenv.isCygwin findutils;
-
-  patchPhase = ''
-    patchShebangs event_rpcgen.py
-  '';
+  buildInputs = [ openssl python ] ++ stdenv.lib.optional stdenv.isCygwin findutils;
 
   meta = with stdenv.lib; {
     description = "Event notification library";

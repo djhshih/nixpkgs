@@ -2,9 +2,9 @@
 , removeGodocExternals ? false }:
 
 let
-  loader386 = "${glibc}/lib/ld-linux.so.2";
-  loaderAmd64 = "${glibc}/lib/ld-linux-x86-64.so.2";
-  loaderArm = "${glibc}/lib/ld-linux.so.3";
+  loader386 = "${glibc.out}/lib/ld-linux.so.2";
+  loaderAmd64 = "${glibc.out}/lib/ld-linux-x86-64.so.2";
+  loaderArm = "${glibc.out}/lib/ld-linux.so.3";
 in
 
 stdenv.mkDerivation {
@@ -90,12 +90,12 @@ stdenv.mkDerivation {
     cp ./misc/emacs/* $out/share/emacs/site-lisp/
   '';
 
-  meta = with stdenv.lib; {
+  meta = {
     branch = "1.1";
     homepage = http://golang.org/;
     description = "The Go Programming language";
-    license = licenses.bsd3;
-    maintainers = with maintainers; [ pierron viric ];
-    platforms = platforms.linux;
+    license = "BSD";
+    maintainers = with stdenv.lib.maintainers; [ pierron viric ];
+    platforms = stdenv.lib.platforms.linux;
   };
 }

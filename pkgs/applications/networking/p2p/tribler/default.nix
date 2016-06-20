@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, pythonPackages, makeWrapper, nettools, libtorrentRasterbar
+{ stdenv, fetchurl, pythonPackages, makeWrapper, nettools, libtorrentRasterbar, imagemagick
 , enablePlayer ? false, vlc ? null }:
 
 
@@ -15,6 +15,7 @@ stdenv.mkDerivation rec {
     pythonPackages.python
     pythonPackages.wrapPython
     makeWrapper
+    imagemagick
   ];
 
   pythonPath = [
@@ -25,7 +26,7 @@ stdenv.mkDerivation rec {
     pythonPackages.twisted
     pythonPackages.gmpy
     pythonPackages.netifaces
-    pythonPackages.pil
+    pythonPackages.pillow
     pythonPackages.pycrypto
     pythonPackages.pyasn1
     pythonPackages.requests
@@ -36,6 +37,7 @@ stdenv.mkDerivation rec {
 
   installPhase =
     ''
+      find . -name '*.png' -exec convert -strip {} {} \;
       # Nasty hack; call wrapPythonPrograms to set program_PYTHONPATH.
       wrapPythonPrograms
 

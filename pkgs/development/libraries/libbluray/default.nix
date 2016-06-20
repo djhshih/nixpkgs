@@ -1,5 +1,5 @@
 { stdenv, fetchurl, pkgconfig, fontconfig, autoreconfHook
-, withJava ? true, jdk ? null, ant ? null
+, withJava ? false, jdk ? null, ant ? null
 , withAACS ? false, libaacs ? null
 , withBDplus ? false, libbdplus ? null
 , withMetadata ? true, libxml2 ? null
@@ -19,12 +19,12 @@ assert withFonts -> freetype != null;
 
 stdenv.mkDerivation rec {
   baseName = "libbluray";
-  version  = "0.8.0";
+  version  = "0.9.2";
   name = "${baseName}-${version}";
 
   src = fetchurl {
-    url = "ftp://ftp.videolan.org/pub/videolan/${baseName}/${version}/${name}.tar.bz2";
-    sha256 = "027xbdbsjyp1spfiva2331pzixrzw6vm97xlvgz16hzm5a5j103v";
+    url = "http://get.videolan.org/${baseName}/${version}/${name}.tar.bz2";
+    sha256 = "1sp71j4agcsg17g6b85cqz78pn5vknl5pl39rvr6mkib5ps99jgg";
   };
 
   nativeBuildInputs = [ pkgconfig autoreconfHook ]

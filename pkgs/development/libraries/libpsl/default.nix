@@ -1,18 +1,58 @@
-{ stdenv, fetchFromGitHub, autoreconfHook, icu, libxslt, pkgconfig }:
+{ stdenv, fetchFromGitHub, autoreconfHook, docbook_xsl, gtk_doc, icu
+, libxslt, pkgconfig, python }:
 
-let version = "0.7.1"; in
-stdenv.mkDerivation rec {
+let
+
+  listVersion = "2016-06-10";
+  listSources = fetchFromGitHub {
+    sha256 = "125wqxargnzj3phqj7ss55p4lm957hsabfbm1db2j04d6ridms6i";
+    rev = "b28087cf291ef5c51fec31403842fa352a6028f7";
+    repo = "list";
+    owner = "publicsuffix";
+  };
+
+  libVersion = "0.13.0";
+
+in stdenv.mkDerivation rec {
   name = "libpsl-${version}";
+  version = "${libVersion}-list-${listVersion}";
 
   src = fetchFromGitHub {
-    sha256 = "0hbsidbmwgpg0h48wh2pzsq59j8az7naz3s5q3yqn99yyjji2vgw";
-    rev = name;
+    sha256 = "12inl984r2qks51wyrzgll83y7k79q2lbhyc545dpk19qnfvp7gz";
+    rev = "libpsl-${libVersion}";
     repo = "libpsl";
     owner = "rockdaboot";
   };
 
+  buildInputs = [ icu libxslt ];
+  nativeBuildInputs = [ autoreconfHook docbook_xsl gtk_doc pkgconfig python ];
+
+  postPatch = ''
+    substituteInPlace src/psl.c --replace bits/stat.h sys/stat.h
+    patchShebangs src/make_dafsa.py
+  '';
+
+  preAutoreconf = ''
+    mkdir m4
+    gtkdocize
+  '';
+
+  preConfigure = ''
+    # The libpsl check phase requires the list's test scripts (tests/) as well
+    cp -Rv "${listSources}"/* list
+  '';
+  configureFlags = [
+    "--disable-builtin"
+    "--disable-static"
+    "--enable-gtk-doc"
+    "--enable-man"
+  ];
+
+  enableParallelBuilding = true;
+
+  doCheck = true;
+
   meta = with stdenv.lib; {
-    inherit version;
     description = "C library for the Publix Suffix List";
     longDescription = ''
       libpsl is a C library for the Publix Suffix List (PSL). A "public suffix"
@@ -26,13 +66,4 @@ stdenv.mkDerivation rec {
     platforms = with platforms; linux ++ darwin;
     maintainers = with maintainers; [ nckx ];
   };
-
-  buildInputs = [ icu libxslt ];
-  nativeBuildInputs = [ autoreconfHook pkgconfig ];
-
-  configureFlags = "--disable-static --enable-man";
-
-  enableParallelBuilding = true;
-
-  doCheck = true;
 }

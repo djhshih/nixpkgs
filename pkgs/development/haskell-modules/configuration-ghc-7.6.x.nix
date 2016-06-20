@@ -40,16 +40,16 @@ self: super: {
   xhtml = self.xhtml_3000_2_1;
 
   # https://github.com/haskell/cabal/issues/2322
-  Cabal_1_22_4_0 = super.Cabal_1_22_4_0.override { binary = dontCheck self.binary_0_7_5_0; };
+  Cabal_1_22_4_0 = super.Cabal_1_22_4_0.override { binary = dontCheck self.binary_0_8_4_0; };
 
   # Avoid inconsistent 'binary' versions from 'text' and 'Cabal'.
-  cabal-install = super.cabal-install.overrideScope (self: super: { binary = dontCheck self.binary_0_7_5_0; });
+  cabal-install = super.cabal-install.overrideScope (self: super: { binary = dontCheck self.binary_0_8_4_0; });
 
   # https://github.com/tibbe/hashable/issues/85
   hashable = dontCheck super.hashable;
 
   # https://github.com/peti/jailbreak-cabal/issues/9
-  jailbreak-cabal = super.jailbreak-cabal.override { Cabal = dontJailbreak self.Cabal_1_20_0_3; };
+  jailbreak-cabal = super.jailbreak-cabal.override { Cabal = dontJailbreak self.Cabal_1_20_0_4; };
 
   # Haddock chokes on the prologue from the cabal file.
   ChasingBottoms = dontHaddock super.ChasingBottoms;
@@ -77,18 +77,26 @@ self: super: {
   control-monad-free = super.control-monad-free_0_5_3;
 
   # Needs hashable on pre 7.10.x compilers.
+  nats_1 = addBuildDepend super.nats_1 self.hashable;
   nats = addBuildDepend super.nats self.hashable;
-
-  # Newer versions always trigger the non-deterministic library ID bug
-  # and are virtually impossible to compile on Hydra.
-  conduit = super.conduit_1_2_4_1;
 
   # https://github.com/magthe/sandi/issues/7
   sandi = overrideCabal super.sandi (drv: {
-    patchPhase = "sed -i -e 's|base ==4.8.*,|base,|' sandi.cabal"; }
-  );
+    postPatch = "sed -i -e 's|base ==4.8.*,|base,|' sandi.cabal";
+  });
 
   # blaze-builder requires an additional build input on older compilers.
   blaze-builder = addBuildDepend super.blaze-builder super.bytestring-builder;
+
+  # available convertible package won't build with the available
+  # bytestring and ghc-mod won't build without convertible
+  convertible = markBroken super.convertible;
+  ghc-mod = markBroken super.ghc-mod;
+
+  # Needs void on pre 7.10.x compilers.
+  conduit = addBuildDepend super.conduit self.void;
+
+  # Needs additional inputs on pre 7.10.x compilers.
+  semigroups = addBuildDepends super.semigroups (with self; [nats tagged unordered-containers transformers]);
 
 }

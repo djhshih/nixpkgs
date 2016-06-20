@@ -2,21 +2,24 @@
 import ./make-test.nix ({ pkgs, ... } : {
   name = "avahi";
   meta = with pkgs.stdenv.lib.maintainers; {
-    maintainers = [ eelco chaoflow wizeman ];
+    maintainers = [ eelco chaoflow ];
   };
 
-  nodes = {
-    one =
-      { config, pkgs, ... }: {
-        services.avahi.enable = true;
-        services.avahi.nssmdns = true;
+  nodes = let
+    cfg = { config, pkgs, ... }: {
+      services.avahi = {
+        enable = true;
+        nssmdns = true;
+        publish.addresses = true;
+        publish.domain = true;
+        publish.enable = true;
+        publish.userServices = true;
+        publish.workstation = true;
       };
-
-    two =
-      { config, pkgs, ... }: {
-        services.avahi.enable = true;
-        services.avahi.nssmdns = true;
-      };
+    };
+  in {
+    one = cfg;
+    two = cfg;
   };
 
   testScript =

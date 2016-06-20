@@ -1,30 +1,32 @@
-{ stdenv, fetchurl, self, callPackage
+{ stdenv, fetchurl, self, callPackage, python27Packages
 , bzip2, openssl, gettext
 
 , includeModules ? false
 
 , db, gdbm, ncurses, sqlite, readline
 
-, tcl ? null, tk ? null, x11 ? null, libX11 ? null, x11Support ? !stdenv.isCygwin
+, tcl ? null, tk ? null, xlibsWrapper ? null, libX11 ? null, x11Support ? !stdenv.isCygwin
 , zlib ? null, zlibSupport ? true
 , expat, libffi
+
+, CF, configd
 }:
 
 assert zlibSupport -> zlib != null;
 assert x11Support -> tcl != null
                   && tk != null
-                  && x11 != null
+                  && xlibsWrapper != null
                   && libX11 != null;
 
 with stdenv.lib;
 
 let
   majorVersion = "2.7";
-  version = "${majorVersion}.10";
+  version = "${majorVersion}.11";
 
   src = fetchurl {
     url = "http://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
-    sha256 = "1h7zbrf9pkj29hlm18b10548ch9757f75m64l47sy75rh43p7lqw";
+    sha256 = "0iiz844riiznsyhhyy962710pz228gmhv8qi3yk4w4jhmx2lqawn";
   };
 
   patches =
@@ -40,6 +42,8 @@ let
       # patch python to put zero timestamp into pyc
       # if DETERMINISTIC_BUILD env var is set
       ./deterministic-build.patch
+
+      ./properly-detect-curses.patch
     ] ++ optionals stdenv.isCygwin [
       ./2.5.2-ctypes-util-find_library.patch
       ./2.5.2-tkinter-x11.patch
@@ -62,6 +66,10 @@ let
       for i in Lib/plat-*/regen; do
         substituteInPlace $i --replace /usr/include/ ${stdenv.cc.libc}/include/
       done
+    '' + optionalString stdenv.isDarwin ''
+      substituteInPlace configure --replace '`/usr/bin/arch`' '"i386"'
+      substituteInPlace Lib/multiprocessing/__init__.py \
+        --replace 'os.popen(comm)' 'os.popen("nproc")'
     '';
 
   configureFlags = [
@@ -72,6 +80,8 @@ let
     "--with-system-ffi"
     "--with-system-expat"
     "ac_cv_func_bind_textdomain_codeset=yes"
+  ] ++ optionals stdenv.isDarwin [
+    "--disable-toolbox-glue"
   ];
 
   postConfigure = if stdenv.isCygwin then ''
@@ -84,9 +94,17 @@ let
     ++ optionals stdenv.isCygwin [ expat libffi ]
     ++ optionals includeModules (
         [ db gdbm ncurses sqlite readline
-        ] ++ optionals x11Support [ tcl tk x11 libX11 ]
+        ] ++ optionals x11Support [ tcl tk xlibsWrapper libX11 ]
     )
-    ++ optional zlibSupport zlib;
+    ++ optional zlibSupport zlib
+    ++ optional stdenv.isDarwin CF;
+
+  propagatedBuildInputs = optional stdenv.isDarwin configd;
+
+  mkPaths = paths: {
+    C_INCLUDE_PATH = makeSearchPathOutput "dev" "include" paths;
+    LIBRARY_PATH = makeLibraryPath paths;
+  };
 
   # Build the basic Python interpreter without modules that have
   # external dependencies.
@@ -94,12 +112,11 @@ let
     name = "python-${version}";
     pythonVersion = majorVersion;
 
-    inherit majorVersion version src patches buildInputs preConfigure
-            configureFlags;
+    inherit majorVersion version src patches buildInputs propagatedBuildInputs
+            preConfigure configureFlags;
 
     LDFLAGS = stdenv.lib.optionalString (!stdenv.isDarwin) "-lgcc_s";
-    C_INCLUDE_PATH = concatStringsSep ":" (map (p: "${p}/include") buildInputs);
-    LIBRARY_PATH = concatStringsSep ":" (map (p: "${p}/lib") buildInputs);
+    inherit (mkPaths buildInputs) C_INCLUDE_PATH LIBRARY_PATH;
 
     NIX_CFLAGS_COMPILE = optionalString stdenv.isDarwin "-msse2";
     DETERMINISTIC_BUILD = 1;
@@ -124,7 +141,9 @@ let
 
         paxmark E $out/bin/python${majorVersion}
 
-        ${ optionalString includeModules "$out/bin/python ./setup.py build_ext"}
+        ${optionalString includeModules "$out/bin/python ./setup.py build_ext"}
+
+        rm "$out"/lib/python*/plat-*/regen # refers to glibc.dev
       '';
 
     passthru = rec {
@@ -132,6 +151,7 @@ let
       isPy2 = true;
       isPy27 = true;
       buildEnv = callPackage ../wrapper.nix { python = self; };
+      withPackages = import ../with-packages.nix { inherit buildEnv; pythonPackages = python27Packages; };
       libPrefix = "python${majorVersion}";
       executable = libPrefix;
       sitePackages = "lib/${libPrefix}/site-packages";
@@ -142,7 +162,7 @@ let
 
     meta = {
       homepage = "http://python.org";
-      description = "a high-level dynamically-typed programming language";
+      description = "A high-level dynamically-typed programming language";
       longDescription = ''
         Python is a remarkably powerful dynamic programming language that
         is used in a wide variety of application domains. Some of its key
@@ -154,7 +174,7 @@ let
       '';
       license = stdenv.lib.licenses.psfl;
       platforms = stdenv.lib.platforms.all;
-      maintainers = with stdenv.lib.maintainers; [ simons chaoflow iElectric ];
+      maintainers = with stdenv.lib.maintainers; [ chaoflow domenkozar ];
     };
   };
 
@@ -173,8 +193,7 @@ let
 
       buildInputs = [ python ] ++ deps;
 
-      C_INCLUDE_PATH = concatStringsSep ":" (map (p: "${p}/include") buildInputs);
-      LIBRARY_PATH = concatStringsSep ":" (map (p: "${p}/lib") buildInputs);
+      inherit (mkPaths buildInputs) C_INCLUDE_PATH LIBRARY_PATH;
 
       # non-python gdbm has a libintl dependency on i686-cygwin, not on x86_64-cygwin
       buildPhase = (if (stdenv.system == "i686-cygwin" && moduleName == "gdbm") then ''
@@ -236,7 +255,7 @@ let
 
     tkinter = if stdenv.isCygwin then null else (buildInternalPythonModule {
       moduleName = "tkinter";
-      deps = [ tcl tk x11 libX11 ];
+      deps = [ tcl tk xlibsWrapper libX11 ];
     });
 
   } // {

@@ -20,9 +20,7 @@ buildPhase() {
         sysOut=$(echo $kernel/lib/modules/$kernelVersion/build)
         unset src # used by the nv makefile
         make SYSSRC=$sysSrc SYSOUT=$sysOut module
-        cd uvm
-        make SYSSRC=$sysSrc SYSOUT=$sysOut module
-        cd ..
+
         cd ..
     fi
 }
@@ -36,6 +34,8 @@ installPhase() {
     cp -prd *.so.* tls "$out/lib/"
     rm "$out"/lib/lib{glx,nvidia-wfb}.so.* # handled separately
 
+    rm $out/lib/libGL.so.1.* # GLVND
+
     if test -z "$libsOnly"; then
         # Install the X drivers.
         mkdir -p $out/lib/xorg/modules
@@ -47,8 +47,10 @@ installPhase() {
 
         # Install the kernel module.
         mkdir -p $out/lib/modules/$kernelVersion/misc
-        cp kernel/nvidia.ko $out/lib/modules/$kernelVersion/misc
-        cp kernel/uvm/nvidia-uvm.ko $out/lib/modules/$kernelVersion/misc
+        for i in $(find ./kernel -name '*.ko'); do
+            nuke-refs $i
+            cp $i $out/lib/modules/$kernelVersion/misc/
+        done
     fi
 
     # All libs except GUI-only are in $out now, so fixup them.
@@ -59,8 +61,20 @@ installPhase() {
       patchelf --set-rpath "$out/lib:$allLibPath" "$libname"
 
       libname_short=`echo -n "$libname" | sed 's/so\..*/so/'`
-      ln -srnf "$libname" "$libname_short"
-      ln -srnf "$libname" "$libname_short.1"
+
+      if [[ "$libname" != "$libname_short" ]]; then
+        ln -srnf "$libname" "$libname_short"
+      fi
+
+      if [[ $libname_short =~ libEGL.so || $libname_short =~ libEGL_nvidia.so ]]; then
+          major=0
+      else
+          major=1
+      fi
+
+      if [[ "$libname" != "$libname_short.$major" ]]; then
+        ln -srnf "$libname" "$libname_short.$major"
+      fi
     done
 
     #patchelf --set-rpath $out/lib:$glPath $out/lib/libGL.so.*.*
@@ -108,6 +122,10 @@ installPhase() {
 
     # For simplicity and dependency reduction, don't support the gtk3 interface.
     rm $out/lib/libnvidia-gtk3.*
+
+    # Move VDPAU libraries to their place
+    mkdir "$out"/lib/vdpau
+    mv "$out"/lib/libvdpau* "$out"/lib/vdpau
 }
 
 

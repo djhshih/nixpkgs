@@ -1,14 +1,13 @@
 { fetchurl, stdenv, go }:
 
-let
-  version = "2.6.0";
-in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "direnv-${version}";
+  version = "2.8.0";
+
   src = fetchurl {
     url = "http://github.com/zimbatm/direnv/archive/v${version}.tar.gz";
     name = "direnv-${version}.tar.gz";
-    sha256 = "b85aac4d6a4ddf2daf193aabb3b2faf89e56507d33d763ab74cc7eb0b524ac03";
+    sha256 = "1l1kvjgpak7cc9s37qipfw6lybb4650zwd8kcdagm409gs89mil6";
   };
 
   buildInputs = [ go ];
@@ -17,7 +16,7 @@ stdenv.mkDerivation {
   installPhase = "make install DESTDIR=$out";
 
   meta = {
-    description = "a shell extension that manages your environment";
+    description = "A shell extension that manages your environment";
     longDescription = ''
       Once hooked into your shell direnv is looking for an .envrc file in your
       current directory before every prompt.

@@ -31,7 +31,8 @@ in rec {
     inherit (nixos') channel manual iso_minimal dummy;
     tests = {
       inherit (nixos'.tests)
-        containers
+        containers-imperative
+        containers-ipv4
         firewall
         ipv6
         login
@@ -43,7 +44,6 @@ in rec {
         simple;
       installer = {
         inherit (nixos'.tests.installer)
-          grub1
           lvm
           separateBoot
           simple;

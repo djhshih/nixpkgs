@@ -2,14 +2,13 @@
 
 let
   version = "10.9";
-in stdenv.mkDerivation {
+in stdenv.mkDerivation rec {
   name = "MacOSX10.9.sdk";
 
   src = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk";
 
-  unpackPhase    = "true";
-  configurePhase = "true";
-  buildPhase     = "true";
+  unpackPhase = "true";
+  dontBuild = true;
 
   installPhase = ''
     mkdir -p $out/Developer/SDKs/

@@ -88,10 +88,7 @@ in
 
     environment.systemPackages = [ pkgs.nfs-utils ];
 
-    environment.etc = singleton
-      { source = exports;
-        target = "exports";
-      };
+    environment.etc.exports.source = exports;
 
     boot.kernelModules = [ "nfsd" ];
 
@@ -129,7 +126,7 @@ in
       { description = "NFSv3 Mount Daemon";
 
         requires = [ "rpcbind.service" ];
-        after = [ "rpcbind.service" ];
+        after = [ "rpcbind.service" "local-fs.target" ];
 
         path = [ pkgs.nfs-utils pkgs.sysvtools pkgs.utillinux ];
 

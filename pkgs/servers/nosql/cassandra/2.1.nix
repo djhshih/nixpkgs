@@ -11,8 +11,8 @@
 
 let
 
-  version = "2.1.7";
-  sha256 = "12chnxcl9zg20d0l4rlzp13cnxvdqr8bx3bbvwbcpnh7ir5s7ldd";
+  version = "2.1.14";
+  sha256 = "168rg8gg1dhcjfjsr1jbfx4zj3zyqn0xi2z1j2c8jn6054486ybg";
 
 in
 
@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     inherit sha256;
-    url = "http://apache.cs.utah.edu/cassandra/${version}/apache-${name}-bin.tar.gz";
+    url = "mirror://apache/cassandra/${version}/apache-${name}-bin.tar.gz";
   };
 
   nativeBuildInputs = [ makeWrapper ];
@@ -45,7 +45,7 @@ stdenv.mkDerivation rec {
   meta = with stdenv.lib; {
     homepage = http://cassandra.apache.org/;
     description = "A massively scalable open source NoSQL database";
-    platforms = with platforms; all;
+    platforms = platforms.all;
     license = licenses.asl20;
     maintainers = with maintainers; [ nckx rushmorem ];
   };

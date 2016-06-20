@@ -18,10 +18,9 @@ stdenv.mkDerivation rec {
 
   configureFlags = [
     "--enable-introspection"
-    "--enable-gles1"
-    "--enable-gles2"
     "--enable-kms-egl-platform"
-  ] ++ stdenv.lib.optional gstreamerSupport "--enable-cogl-gst";
+  ] ++ stdenv.lib.optional gstreamerSupport "--enable-cogl-gst"
+    ++ stdenv.lib.optionals (!stdenv.isDarwin) [ "--enable-gles1" "--enable-gles2" ];
 
   propagatedBuildInputs = with xorg; [
       glib gdk_pixbuf gobjectIntrospection
@@ -35,7 +34,7 @@ stdenv.mkDerivation rec {
 
   COGL_PANGO_DEP_CFLAGS
     = stdenv.lib.optionalString (stdenv.isDarwin && pangoSupport)
-      "-I${pango}/include/pango-1.0 -I${cairo}/include/cairo";
+      "-I${pango.dev}/include/pango-1.0 -I${cairo.dev}/include/cairo";
 
   NIX_LDFLAGS = stdenv.lib.optionalString stdenv.isDarwin "-lintl";
 

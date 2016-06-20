@@ -1,4 +1,4 @@
-{ stdenv, fetchgit, libpng, python3, boost, mesa, qt5, ncurses }:
+{ stdenv, fetchgit, libpng, python3, boost, mesa, qtbase, qmakeHook, ncurses }:
 
 let
   gitRev    = "745eca3a2d2657c495d5509e9083c884e021d09c";
@@ -12,30 +12,42 @@ in
     src  = fetchgit {
       url         = "git://github.com/mkeeter/antimony.git";
       rev         = gitRev;
-      sha256      = "19ir3y5ipmfyygcn8mbxika4j3af6dfrv54dvhn6maz7dy8h30f4";
+      sha256      = "0azjdkbixz2pyk2yy7a0ya5xk60xgw3l2pd4pj4ijyqxx5jmh0sy";
     };
 
     patches = [ ./paths-fix.patch ];
+    # fix build with glibc-2.23
+    postPatch = ''
+      sed 's/\<isinf(/std::isinf(/g' -i \
+        src/export/export_heightmap.cpp \
+        src/fab/types/bounds.cpp \
+        src/graph/hooks/meta.cpp \
+        src/ui/dialogs/resolution_dialog.cpp \
+        src/render/render_task.cpp
+    '';
 
     buildInputs = [
       libpng python3 (boost.override { python = python3; })
-      mesa qt5.base ncurses
+      mesa qtbase ncurses
     ];
 
-    configurePhase = ''
+    nativeBuildHooks = [ qmakeHook ];
+
+    preConfigure = ''
       export GITREV=${gitRev}
       export GITBRANCH=${gitBranch}
       export GITTAG=${gitTag}
 
       cd qt
-      export sourceRoot=$sourceRoot/qt
-      qmake antimony.pro PREFIX=$out
     '';
+
+    enableParallelBuilding = true;
 
     meta = with stdenv.lib; {
       description = "A computer-aided design (CAD) tool from a parallel universe";
       homepage    = "https://github.com/mkeeter/antimony";
       license     = licenses.mit;
       platforms   = platforms.linux;
+      broken = true;
     };
   }

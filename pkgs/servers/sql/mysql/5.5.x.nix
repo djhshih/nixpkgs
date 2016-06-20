@@ -1,14 +1,15 @@
-{ stdenv, fetchurl, cmake, bison, ncurses, openssl, readline, zlib, perl }:
+{ stdenv, fetchurl, cmake, bison, ncurses, openssl, readline, zlib, perl
+, cctools, CoreServices }:
 
 # Note: zlib is not required; MySQL can use an internal zlib.
 
 stdenv.mkDerivation rec {
   name = "mysql-${version}";
-  version = "5.5.44";
+  version = "5.5.49";
 
   src = fetchurl {
-    url = "http://mysql.mirrors.pair.com/Downloads/MySQL-5.5/${name}.tar.gz";
-    sha256 = "1pp5ngm4ibnp8xnn9haz1db0favd1i7cxdgl5z4677mkgljmpw45";
+    url = "mirror://mysql/MySQL-5.5/${name}.tar.gz";
+    sha256 = "07wy1qbxf3fxgi04v6cqs4ymi9hgsgabk218bxiwlsx706ds976d";
   };
 
   patches = if stdenv.isCygwin then [
@@ -22,7 +23,7 @@ stdenv.mkDerivation rec {
   '';
 
   buildInputs = [ cmake bison ncurses openssl readline zlib ]
-     ++ stdenv.lib.optional stdenv.isDarwin perl;
+     ++ stdenv.lib.optionals stdenv.isDarwin [ perl cctools CoreServices ];
 
   enableParallelBuilding = true;
 
@@ -54,7 +55,7 @@ stdenv.mkDerivation rec {
   '';
   postInstall = ''
     sed -i -e "s|basedir=\"\"|basedir=\"$out\"|" $out/bin/mysql_install_db
-    rm -r $out/mysql-test $out/sql-bench $out/data
+    rm -r $out/mysql-test $out/sql-bench $out/data "$out"/lib/*.a
     rm $out/share/man/man1/mysql-test-run.pl.1
   '';
 

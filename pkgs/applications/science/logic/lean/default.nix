@@ -1,17 +1,18 @@
 { stdenv, fetchFromGitHub, cmake, gmp, mpfr, luajit, boost, python
-, gperftools, ninja }:
+, gperftools, ninja, makeWrapper }:
 
 stdenv.mkDerivation rec {
-  name = "lean-20150328";
+  name = "lean-${version}";
+  version = "20160117";
 
   src = fetchFromGitHub {
     owner  = "leanprover";
     repo   = "lean";
-    rev    = "1b15036dba469020d37f7d6b77b88974d8a36cb1";
-    sha256 = "0w38g83gp7d3ybfiz9jpl2jz3ljad70bxmar0dnnv45wx42clg96";
+    rev    = "b2554dcb8f45899ccce84f226cd67b6460442930";
+    sha256 = "1gr024bly92kdjky5qvcm96gn86ijakziiyrsz91h643n1iyxhms";
   };
 
-  buildInputs = [ gmp mpfr luajit boost cmake python gperftools ninja ];
+  buildInputs = [ gmp mpfr luajit boost cmake python gperftools ninja makeWrapper ];
   enableParallelBuilding = true;
 
   preConfigure = ''
@@ -20,6 +21,10 @@ stdenv.mkDerivation rec {
   '';
 
   cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" ];
+
+  postInstall = ''
+    wrapProgram $out/bin/linja --prefix PATH : $out/bin:${ninja}/bin
+  '';
 
   meta = {
     description = "Automatic and interactive theorem prover";

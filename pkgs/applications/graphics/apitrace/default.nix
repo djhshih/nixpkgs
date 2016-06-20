@@ -1,23 +1,21 @@
-{ stdenv, fetchFromGitHub, cmake, python, libX11, qt4 }:
+{ stdenv, fetchFromGitHub, cmake, libX11, procps, python, libdwarf, qtbase, qtwebkit }:
 
-let version = "6.1"; in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "apitrace-${version}";
+  version = "7.1";
 
   src = fetchFromGitHub {
-    sha256 = "1v38111ljd35v5sahshs3inhk6nsv7rxh4r0ck8k0njkwzlx2yqk";
+    sha256 = "1n2gmsjnpyam7isg7n1ksggyh6y1l8drvx0a93bnvbcskr7jiz9a";
     rev = version;
     repo = "apitrace";
     owner = "apitrace";
   };
 
-  buildInputs = [ python libX11 qt4 ];
-  nativeBuildInputs = [ cmake ];
+  # LD_PRELOAD wrappers need to be statically linked to work against all kinds
+  # of games -- so it's fine to use e.g. bundled snappy.
+  buildInputs = [ libX11 procps python libdwarf qtbase qtwebkit ];
 
-  buildPhase = ''
-    cmake
-    make
-  '';
+  nativeBuildInputs = [ cmake ];
 
   meta = with stdenv.lib; {
     homepage = https://apitrace.github.io;

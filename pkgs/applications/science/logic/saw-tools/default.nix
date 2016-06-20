@@ -7,24 +7,24 @@ let
       gmp4
       ncurses
       zlib
-    ] + ":${stdenv.cc.cc}/lib64";
+    ] + ":${stdenv.cc.cc.lib}/lib64";
 
   url = "https://github.com/GaloisInc/saw-script/releases/download";
 
   saw-bin =
     if stdenv.system == "i686-linux"
     then fetchurl {
-      url    = url + "/v0.1-dev/saw-0.1-dev-2015-06-09-CentOS6-32.tar.gz";
-      sha256 = "0hfb3a749fvwn33jnj1bgpk7v4pbvjjjffhafck6s8yz2sknnq4w";
+      url    = url + "/v0.1.1-dev/saw-0.1.1-dev-2015-07-31-CentOS6-32.tar.gz";
+      sha256 = "126iag5nnvndi78c921z7vjrjfwcspn1hlxwwhzmqm4rvbhhr9v9";
     }
     else fetchurl {
-      url    = url + "/v0.1-dev/saw-0.1-dev-2015-06-09-CentOS6-64.tar.gz";
-      sha256 = "1yz56kr8s0jcrfk1i87x63ngxip2i1s123arydnqq8myjyfz8id9";
+      url    = url + "/v0.1.1-dev/saw-0.1.1-dev-2015-07-31-CentOS6-64.tar.gz";
+      sha256 = "07gyf319v6ama6n1aj96403as04bixi8mbisfy7f7va689zklflr";
     };
 in
 stdenv.mkDerivation rec {
   name    = "saw-tools-${version}";
-  version = "0.1-20150609";
+  version = "0.1.1-20150731";
 
   src = saw-bin;
 
@@ -35,7 +35,7 @@ stdenv.mkDerivation rec {
     mv doc $out/share
 
     # Hack around lack of libtinfo in NixOS
-    ln -s ${ncurses}/lib/libncursesw.so.5       $out/lib/libtinfo.so.5
+    ln -s ${ncurses.out}/lib/libncursesw.so.5       $out/lib/libtinfo.so.5
     ln -s ${stdenv.cc.libc}/lib/libpthread.so.0 $out/lib/libpthread.so.0
 
     # Add a clang symlink for easy building with a suitable compiler.

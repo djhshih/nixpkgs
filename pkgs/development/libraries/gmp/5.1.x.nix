@@ -1,6 +1,6 @@
 { stdenv, fetchurl, m4, cxx ? true, withStatic ? true }:
 
-with { inherit (stdenv.lib) optional; };
+with { inherit (stdenv.lib) optional optionalString; };
 
 stdenv.mkDerivation rec {
   name = "gmp-5.1.3";
@@ -9,6 +9,8 @@ stdenv.mkDerivation rec {
     urls = [ "mirror://gnu/gmp/${name}.tar.bz2" "ftp://ftp.gmplib.org/pub/${name}/${name}.tar.bz2" ];
     sha256 = "0q5i39pxrasgn9qdxzpfbwhh11ph80p57x6hf48m74261d97j83m";
   };
+
+  outputs = [ "out" "info" ];
 
   nativeBuildInputs = [ m4 ];
 
@@ -27,6 +29,13 @@ stdenv.mkDerivation rec {
     ++ optional stdenv.isDarwin "ABI=64"
     ++ optional stdenv.is64bit "--with-pic"
     ;
+
+  # The config.guess in GMP tries to runtime-detect various
+  # ARM optimization flags via /proc/cpuinfo (and is also
+  # broken on multicore CPUs). Avoid this impurity.
+  preConfigure = optionalString stdenv.isArm ''
+      configureFlagsArray+=("--build=$(./configfsf.guess)")
+    '';
 
   doCheck = true;
 
@@ -62,6 +71,6 @@ stdenv.mkDerivation rec {
       '';
 
     platforms = platforms.all;
-    maintainers = [ maintainers.simons ];
+    maintainers = [ maintainers.peti ];
   };
 }

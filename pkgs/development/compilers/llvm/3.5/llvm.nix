@@ -12,10 +12,12 @@
 , version
 , zlib
 , compiler-rt_src
+, debugVersion ? false
+, enableSharedLibraries ? !stdenv.isDarwin
 }:
 
 let
-  src = fetch "llvm" "00swb43mzlvda8306arlg2jw7g6k3acwfccgf1k4c2pgd3rrkq98";
+  src = fetch "llvm" "0xf5q17kkxsrm2gsi93h4pwlv663kji73r2g4asb97klsmb626a4";
 in stdenv.mkDerivation rec {
   name = "llvm-${version}";
 
@@ -38,14 +40,15 @@ in stdenv.mkDerivation rec {
   '';
 
   cmakeFlags = with stdenv; [
-    "-DCMAKE_BUILD_TYPE=Release"
+    "-DCMAKE_BUILD_TYPE=${if debugVersion then "Debug" else "Release"}"
     "-DLLVM_BUILD_TESTS=ON"
     "-DLLVM_ENABLE_FFI=ON"
     "-DLLVM_REQUIRES_RTTI=1"
-  ] ++ stdenv.lib.optionals (!isDarwin) [
+  ] ++ stdenv.lib.optional enableSharedLibraries
     "-DBUILD_SHARED_LIBS=ON"
-    "-DLLVM_BINUTILS_INCDIR=${binutils}/include"
-  ] ++ stdenv.lib.optionals ( isDarwin) [
+    ++ stdenv.lib.optional (!isDarwin)
+    "-DLLVM_BINUTILS_INCDIR=${binutils.dev}/include"
+    ++ stdenv.lib.optionals ( isDarwin) [
     "-DCMAKE_CXX_FLAGS=-stdlib=libc++"
     "-DCAN_TARGET_i386=false"
   ];

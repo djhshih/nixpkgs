@@ -1,30 +1,53 @@
-{ stdenv, fetchurl, makeWrapper, go, lxc, sqlite, iproute, bridge-utils, devicemapper,
-btrfsProgs, iptables, bash, e2fsprogs, xz}:
+{ stdenv, fetchFromGitHub, makeWrapper
+, go, sqlite, iproute, bridge-utils, devicemapper
+, btrfs-progs, iptables, e2fsprogs, xz, utillinux
+, systemd, pkgconfig
+}:
+
+# https://github.com/docker/docker/blob/master/project/PACKAGERS.md
+
+with stdenv.lib;
 
 stdenv.mkDerivation rec {
   name = "docker-${version}";
-  version = "1.6.0";
+  version = "1.10.3";
 
-  src = fetchurl {
-    url = "https://github.com/dotcloud/docker/archive/v${version}.tar.gz";
-    sha256 = "03nzhikxp60falshzyk6ip8g9fhrczhvnvgmzqr8bny6w8x1v84b";
+  src = fetchFromGitHub {
+    owner = "docker";
+    repo = "docker";
+    rev = "v${version}";
+    sha256 = "0bmrafi0p3fm681y165ps97jki0a8ihl9f0bmpvi22nmc1v0sv6l";
   };
 
-  buildInputs = [ makeWrapper go sqlite lxc iproute bridge-utils devicemapper btrfsProgs iptables e2fsprogs ];
+  buildInputs = [
+    makeWrapper go sqlite iproute bridge-utils devicemapper btrfs-progs
+    iptables e2fsprogs systemd pkgconfig stdenv.glibc stdenv.glibc.static
+  ];
 
   dontStrip = true;
+
+  DOCKER_BUILDTAGS = [ "journald" ]
+    ++ optional (btrfs-progs == null) "exclude_graphdriver_btrfs"
+    ++ optional (devicemapper == null) "exclude_graphdriver_devicemapper";
+
+  # systemd 230 no longer has libsystemd-journal as a separate entity from libsystemd
+  postPatch = ''
+    substituteInPlace ./hack/make.sh                   --replace libsystemd-journal libsystemd
+    substituteInPlace ./daemon/logger/journald/read.go --replace libsystemd-journal libsystemd
+  '';
 
   buildPhase = ''
     patchShebangs .
     export AUTO_GOPATH=1
-    export DOCKER_GITCOMMIT="03nzhikx"
+    export DOCKER_GITCOMMIT="a34a1d59"
     ./hack/make.sh dynbinary
   '';
 
   installPhase = ''
     install -Dm755 ./bundles/${version}/dynbinary/docker-${version} $out/libexec/docker/docker
     install -Dm755 ./bundles/${version}/dynbinary/dockerinit-${version} $out/libexec/docker/dockerinit
-    makeWrapper $out/libexec/docker/docker $out/bin/docker --prefix PATH : "${iproute}/sbin:sbin:${lxc}/bin:${iptables}/sbin:${e2fsprogs}/sbin:${xz}/bin"
+    makeWrapper $out/libexec/docker/docker $out/bin/docker \
+      --prefix PATH : "${iproute}/sbin:sbin:${iptables}/sbin:${e2fsprogs}/sbin:${xz.bin}/bin:${utillinux}/bin"
 
     # systemd
     install -Dm644 ./contrib/init/systemd/docker.service $out/etc/systemd/system/docker.service
@@ -35,7 +58,7 @@ stdenv.mkDerivation rec {
   '';
 
   meta = with stdenv.lib; {
-    homepage = http://www.docker.io/;
+    homepage = http://www.docker.com/;
     description = "An open source project to pack, ship and run any application as a lightweight container";
     license = licenses.asl20;
     maintainers = with maintainers; [ offline tailhook ];

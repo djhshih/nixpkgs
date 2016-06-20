@@ -1,10 +1,9 @@
-{ stdenv, fetchurl, bison, glibc, bash, coreutils, makeWrapper, tzdata, iana_etc
-, libgpgerror }:
+{ stdenv, fetchurl, bison, glibc, bash, coreutils, makeWrapper, tzdata, iana_etc }:
 
 let
-  loader386 = "${glibc}/lib/ld-linux.so.2";
-  loaderAmd64 = "${glibc}/lib/ld-linux-x86-64.so.2";
-  loaderArm = "${glibc}/lib/ld-linux.so.3";
+  loader386 = "${glibc.out}/lib/ld-linux.so.2";
+  loaderAmd64 = "${glibc.out}/lib/ld-linux-x86-64.so.2";
+  loaderArm = "${glibc.out}/lib/ld-linux.so.3";
 in
 
 stdenv.mkDerivation {
@@ -15,7 +14,7 @@ stdenv.mkDerivation {
     sha1 = "3ce0ac4db434fc1546fec074841ff40dc48c1167";
   };
 
-  buildInputs = [ bison glibc bash makeWrapper libgpgerror ];
+  buildInputs = [ bison glibc bash makeWrapper ];
 
   NIX_CFLAGS_COMPILE = "-Wno-error=cpp";
 
@@ -81,12 +80,12 @@ stdenv.mkDerivation {
     cp ./misc/emacs/* $out/share/emacs/site-lisp/
   '';
 
-  meta = with stdenv.lib; {
+  meta = {
     branch = "1.2";
     homepage = http://golang.org/;
     description = "The Go Programming language";
-    license = licenses.bsd3;
-    maintainers = with maintainers; [ pierron viric ];
-    platforms = platforms.linux;
+    license = "BSD";
+    maintainers = with stdenv.lib.maintainers; [ pierron viric ];
+    platforms = stdenv.lib.platforms.linux;
   };
 }

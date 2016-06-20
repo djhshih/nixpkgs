@@ -25,27 +25,66 @@ let
     '';
   };
 
+  nixos-gsettings-desktop-schemas = pkgs.stdenv.mkDerivation {
+    name = "nixos-gsettings-desktop-schemas";
+    buildCommand = ''
+     mkdir -p $out/share/gsettings-schemas/nixos-gsettings-overrides/glib-2.0/schemas
+     cp -rf ${gnome3.gsettings_desktop_schemas}/share/gsettings-schemas/gsettings-desktop-schemas*/glib-2.0/schemas/*.xml $out/share/gsettings-schemas/nixos-gsettings-overrides/glib-2.0/schemas
+
+     ${concatMapStrings (pkg: "cp -rf ${pkg}/share/gsettings-schemas/*/glib-2.0/schemas/*.xml $out/share/gsettings-schemas/nixos-gsettings-overrides/glib-2.0/schemas\n") cfg.extraGSettingsOverridePackages}
+
+     chmod -R a+w $out/share/gsettings-schemas/nixos-gsettings-overrides
+     cat - > $out/share/gsettings-schemas/nixos-gsettings-overrides/glib-2.0/schemas/nixos-defaults.gschema.override <<- EOF
+       [org.gnome.desktop.background]
+       picture-uri='${pkgs.nixos-artwork}/share/artwork/gnome/Gnome_Dark.png'
+
+       [org.gnome.desktop.screensaver]
+       picture-uri='${pkgs.nixos-artwork}/share/artwork/gnome/Gnome_Dark.png'
+
+       ${cfg.extraGSettingsOverrides}
+     EOF
+
+     ${pkgs.glib.dev}/bin/glib-compile-schemas $out/share/gsettings-schemas/nixos-gsettings-overrides/glib-2.0/schemas/
+    '';
+  };
+
 in {
 
   options = {
 
-    services.xserver.desktopManager.gnome3.enable = mkOption {
-      default = false;
-      example = true;
-      description = "Enable Gnome 3 desktop manager.";
-    };
+    services.xserver.desktopManager.gnome3 = {
+      enable = mkOption {
+        default = false;
+        example = true;
+        description = "Enable Gnome 3 desktop manager.";
+      };
 
-    services.xserver.desktopManager.gnome3.sessionPath = mkOption {
-      default = [];
-      example = literalExample "[ pkgs.gnome3.gpaste ]";
-      description = "Additional list of packages to be added to the session search path.
-                     Useful for gnome shell extensions or gsettings-conditionated autostart.";
-      apply = list: list ++ [ gnome3.gnome_shell ]; 
-    };
+      sessionPath = mkOption {
+        default = [];
+        example = literalExample "[ pkgs.gnome3.gpaste ]";
+        description = "Additional list of packages to be added to the session search path.
+                       Useful for gnome shell extensions or gsettings-conditionated autostart.";
+        apply = list: list ++ [ gnome3.gnome_shell gnome3.gnome-shell-extensions ];
+      };
+
+      extraGSettingsOverrides = mkOption {
+        default = "";
+        type = types.lines;
+        description = "Additional gsettings overrides.";
+      };
+
+      extraGSettingsOverridePackages = mkOption {
+        default = [];
+        type = types.listOf types.path;
+        description = "List of packages for which gsettings are overridden.";
+      };
+
+      debug = mkEnableOption "gnome-session debug messages";
+    };  
 
     environment.gnome3.packageSet = mkOption {
       default = null;
-      example = literalExample "pkgs.gnome3_16";
+      example = literalExample "pkgs.gnome3_18";
       description = "Which GNOME 3 package set to use.";
       apply = p: if p == null then pkgs.gnome3 else p;
     };
@@ -86,6 +125,7 @@ in {
 
     services.xserver.desktopManager.session = singleton
       { name = "gnome3";
+        bgSupport = true;
         start = ''
           # Set GTK_DATA_PREFIX so that GTK+ can find the themes
           export GTK_DATA_PREFIX=${config.system.path}
@@ -109,6 +149,9 @@ in {
           # Override default mimeapps
           export XDG_DATA_DIRS=$XDG_DATA_DIRS''${XDG_DATA_DIRS:+:}${mimeAppsList}/share
 
+          # Override gsettings-desktop-schema
+          export XDG_DATA_DIRS=${nixos-gsettings-desktop-schemas}/share/gsettings-schemas/nixos-gsettings-overrides''${XDG_DATA_DIRS:+:}$XDG_DATA_DIRS
+
           # Let nautilus find extensions
           export NAUTILUS_EXTENSION_DIR=${config.system.path}/lib/nautilus/extensions-3.0/
 
@@ -118,16 +161,15 @@ in {
           # Update user dirs as described in http://freedesktop.org/wiki/Software/xdg-user-dirs/
           ${pkgs.xdg-user-dirs}/bin/xdg-user-dirs-update
 
-          # Find the mouse
-          export XCURSOR_PATH=~/.icons:${config.system.path}/share/icons
-
-          ${gnome3.gnome_session}/bin/gnome-session&
+          ${gnome3.gnome_session}/bin/gnome-session ${optionalString cfg.debug "--debug"} &
           waitPID=$!
         '';
       };
 
+    services.xserver.updateDbusEnvironment = true;
+
     environment.variables.GIO_EXTRA_MODULES = [ "${gnome3.dconf}/lib/gio/modules"
-                                                "${gnome3.glib_networking}/lib/gio/modules"
+                                                "${gnome3.glib_networking.out}/lib/gio/modules"
                                                 "${gnome3.gvfs}/lib/gio/modules" ];
     environment.systemPackages = gnome3.corePackages ++ cfg.sessionPath
       ++ (removePackagesByName gnome3.optionalPackages config.environment.gnome3.excludePackages);

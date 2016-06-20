@@ -1,24 +1,31 @@
-{ stdenv, fetchurl, pkgconfig, cacert, c-ares, openssl, libxml2, sqlite, zlib }:
+{ stdenv, fetchurl, pkgconfig, autoreconfHook
+, openssl, c-ares, libxml2, sqlite, zlib, libssh2
+, Security
+}:
 
 stdenv.mkDerivation rec {
   name = "aria2-${version}";
-  version = "1.19.0";
+  version = "1.23.0";
 
   src = fetchurl {
-    url = "mirror://sourceforge/aria2/stable/${name}/${name}.tar.xz";
-    sha256 = "0xm4fmap9gp2pz6z01mnnpmazw6pnhzs8qc58181m5ai4gy5ksp2";
+    url = "https://github.com/tatsuhiro-t/aria2/releases/download/release-${version}/${name}.tar.xz";
+    sha256 = "14qz7686zxnhbaqj6l1hqpkykhpygm74h2mzwhh13gqmcj38alaq";
   };
 
-  buildInputs = [ pkgconfig c-ares openssl libxml2 sqlite zlib ];
+  nativeBuildInputs = [ pkgconfig ];
 
-  propagatedBuildInputs = [ cacert ];
+  buildInputs = [ openssl c-ares libxml2 sqlite zlib libssh2 ] ++
+    stdenv.lib.optional stdenv.isDarwin Security;
 
-  configureFlags = [ "--with-ca-bundle=${cacert}/etc/ssl/certs/ca-bundle.crt" ];
+  configureFlags = [ "--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt" ];
+
+  enableParallelBuilding = true;
 
   meta = with stdenv.lib; {
-    homepage = http://aria2.sourceforge.net/;
+    homepage = https://github.com/tatsuhiro-t/aria2;
     description = "A lightweight, multi-protocol, multi-source, command-line download utility";
-    maintainers = [ maintainers.koral ];
+    maintainers = with maintainers; [ koral jgeerds ];
     license = licenses.gpl2Plus;
+    platforms = platforms.unix;
   };
 }

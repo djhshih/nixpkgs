@@ -1,19 +1,17 @@
-{ fetchurl, stdenv, libkrb5 }:
+{ fetchurl, stdenv, autoreconfHook, libkrb5 }:
 
 stdenv.mkDerivation rec {
-  name = "libtirpc-0.3.0";
+  name = "libtirpc-1.0.1";
 
   src = fetchurl {
     url = "mirror://sourceforge/libtirpc/${name}.tar.bz2";
-    sha256 = "07d1wlfzf3ia09mjn3f3ay8isk7yx4a6ckfkzx5khnqlc7amkzna";
+    sha256 = "17mqrdgsgp9m92pmq7bvr119svdg753prqqxmg4cnz5y657rfmji";
   };
 
+  nativeBuildInputs = [ autoreconfHook ];
   propagatedBuildInputs = [ libkrb5 ];
 
-  # http://www.sourcemage.org/projects/grimoire/repository/revisions/d6344b6a3a94b88ed67925a474de5930803acfbf
   preConfigure = ''
-    echo "" > src/des_crypt.c
-
     sed -es"|/etc/netconfig|$out/etc/netconfig|g" -i doc/Makefile.in tirpc/netconfig.h
   '';
 

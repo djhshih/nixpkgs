@@ -2,14 +2,14 @@
 , makeWrapper }:
 
 stdenv.mkDerivation rec {
-  version = "5.2.3";
+  version = "5.5.2";
   name = "dd-agent-${version}";
 
   src = fetchFromGitHub {
-    owner = "DataDog";
-    repo = "dd-agent";
-    rev = version;
-    sha256 = "05flcbzpnmhf6qskkccbfk957sl9hhydlp4p5vqhs62hkpwmqwan";
+    owner  = "datadog";
+    repo   = "dd-agent";
+    rev    = version;
+    sha256 = "0ga7h3rdg6q2pi4dxxkird5nf6s6hc13mj1xd9awwpli48gyvxn7";
   };
 
   buildInputs = [
@@ -22,6 +22,8 @@ stdenv.mkDerivation rec {
     pythonPackages.simplejson
     pythonPackages.pyyaml
     pythonPackages.requests
+    pythonPackages.pymongo
+    pythonPackages.docker
   ];
   propagatedBuildInputs = [ python tornado ];
 
@@ -49,6 +51,6 @@ stdenv.mkDerivation rec {
     homepage    = http://www.datadoghq.com;
     license     = stdenv.lib.licenses.bsd3;
     platforms   = stdenv.lib.platforms.all;
-    maintainers = with stdenv.lib.maintainers; [ thoughtpolice iElectric ];
+    maintainers = with stdenv.lib.maintainers; [ thoughtpolice domenkozar ];
   };
 }

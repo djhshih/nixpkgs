@@ -1,5 +1,6 @@
-{ stdenv, fetchurl, makeWrapper, buildPythonPackage, zip, ffmpeg
-, pandoc ? null }:
+{ stdenv, fetchurl, buildPythonApplication, makeWrapper, ffmpeg, zip
+, pandoc ? null
+}:
 
 # Pandoc is required to build the package's man page. Release tarballs
 # contain a formatted man page already, though, so it's fine to pass
@@ -8,23 +9,27 @@
 # case someone wants to use this derivation to build a Git version of
 # the tool that doesn't have the formatted man page included.
 
-buildPythonPackage rec {
+buildPythonApplication rec {
+
   name = "youtube-dl-${version}";
-  version = "2015.05.29";
+  version = "2016.05.21.2";
 
   src = fetchurl {
-    url = "http://youtube-dl.org/downloads/${version}/${name}.tar.gz";
-    sha256 = "0lgxir2i5ipplg57wk8gnbbsdrk7szqnyb1bxr97f3h0rbm4dfij";
+    url = "http://yt-dl.org/downloads/${version}/${name}.tar.gz";
+    sha256 = "66f94fc97012c4c7a6338dc4df6ec62af66dcfc144c5e8c8cd8b5519756f1a98";
   };
 
   buildInputs = [ makeWrapper zip pandoc ];
 
   # Ensure ffmpeg is available in $PATH for post-processing & transcoding support.
-  postInstall = stdenv.lib.optionalString (ffmpeg != null) 
-    ''wrapProgram $out/bin/youtube-dl --prefix PATH : "${ffmpeg}/bin"'';
+  postInstall = stdenv.lib.optionalString (ffmpeg != null)
+    ''wrapProgram $out/bin/youtube-dl --prefix PATH : "${ffmpeg.bin}/bin"'';
+
+  # Requires network
+  doCheck = false;
 
   meta = with stdenv.lib; {
-    homepage = "http://rg3.github.com/youtube-dl/";
+    homepage = http://rg3.github.io/youtube-dl/;
     repositories.git = https://github.com/rg3/youtube-dl.git;
     description = "Command-line tool to download videos from YouTube.com and other sites";
     longDescription = ''
@@ -35,6 +40,6 @@ buildPythonPackage rec {
     '';
     license = licenses.publicDomain;
     platforms = with platforms; linux ++ darwin;
-    maintainers = with maintainers; [ bluescreen303 simons phreedom AndersonTorres fuuzetsu ];
+    maintainers = with maintainers; [ bluescreen303 phreedom AndersonTorres fuuzetsu ];
   };
 }

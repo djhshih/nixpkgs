@@ -20,7 +20,7 @@ let
   canEfi = any (system: stdenv.system == system) (mapAttrsToList (name: _: name) efiSystems);
   inPCSystems = any (system: stdenv.system == system) (mapAttrsToList (name: _: name) pcSystems);
 
-  version = "2.x-2015-07-05";
+  version = "2.x-2015-11-16";
 
   unifont_bdf = fetchurl {
     url = "http://unifoundry.com/unifont-5.1.20080820.bdf.gz";
@@ -43,8 +43,8 @@ stdenv.mkDerivation rec {
 
   src = fetchFromSavannah {
     repo = "grub";
-    rev = "0d7c7f751dc5a8338497bef8b38f78153c4f0464";
-    sha256 = "1vkd7na3kp9ri4xsd3zznvnrjzz1qsz62fycg941pm2k18r3m7xd";
+    rev = "50d6f38febe80d4d3088dae1ee639b341787ab71";
+    sha256 = "1pyn2qa8hwiabhgnzj86y4b69y4a37dh5n0j4csmm7xmgc13vvww";
   };
 
   nativeBuildInputs = [ autogen flex bison python autoconf automake ];
@@ -98,6 +98,9 @@ stdenv.mkDerivation rec {
 
   postInstall = ''
     paxmark pms $out/sbin/grub-{probe,bios-setup}
+
+    # Avoid a runtime reference to gcc
+    sed -i $out/lib/grub/*/modinfo.sh -e "/grub_target_cppflags=/ s|'.*'|' '|"
   '';
 
   meta = with stdenv.lib; {

@@ -1,20 +1,24 @@
 { stdenv, fetchurl, pkgconfig
 , libxml2, libXinerama, libXcursor, libXau, libXrandr
-, imlib2, pango, libstartup_notification, makeWrapper}:
+, imlib2, pango, libstartup_notification, makeWrapper }:
 
 stdenv.mkDerivation rec {
-  name = "openbox-3.5.2";
+  name = "openbox-${version}";
+  version = "3.6.1";
 
   buildInputs = [
     pkgconfig libxml2
     libXinerama libXcursor libXau libXrandr
-    imlib2 pango libstartup_notification
-    makeWrapper
+    libstartup_notification makeWrapper
+  ];
+
+  propagatedBuildInputs = [
+    pango imlib2
   ];
 
   src = fetchurl {
     url = "http://openbox.org/dist/openbox/${name}.tar.gz";
-    sha256 = "0cxgb334zj6aszwiki9g10i56sm18i7w1kw52vdnwgzq27pv93qj";
+    sha256 = "1xvyvqxlhy08n61rjkckmrzah2si1i7nmc7s8h07riqq01vc0jlb";
   };
 
   setlayoutSrc = fetchurl {
@@ -37,5 +41,6 @@ stdenv.mkDerivation rec {
     description = "X window manager for non-desktop embedded systems";
     homepage = http://openbox.org/;
     license = stdenv.lib.licenses.gpl2Plus;
+    platforms = stdenv.lib.platforms.linux;
   };
 }

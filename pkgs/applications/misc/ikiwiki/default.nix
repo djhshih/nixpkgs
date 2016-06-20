@@ -23,7 +23,7 @@ assert mercurialSupport -> (mercurial != null);
 
 let
   name = "ikiwiki";
-  version = "3.20150107";
+  version = "3.20150614";
 
   lib = stdenv.lib;
 in
@@ -31,8 +31,8 @@ stdenv.mkDerivation {
   name = "${name}-${version}";
 
   src = fetchurl {
-    url = "https://github.com/joeyh/ikiwiki/archive/debian/${version}.tar.gz";
-    sha256 = "12kiqjxrh93gysdp7bhglnks2md9davl8jgzqlj0m8xs5rf1972n";
+    url = "http://ftp.de.debian.org/debian/pool/main/i/ikiwiki/${name}_${version}.tar.gz";
+    sha256 = "0sbs58d7faap1wp2rv7kf3gy3hid1hcpspgqs9wwms2qcki9kwa2";
   };
 
   buildInputs = [ perl TextMarkdown URI HTMLParser HTMLScrubber HTMLTemplate
@@ -66,7 +66,7 @@ stdenv.mkDerivation {
       ${lib.optionalString bazaarSupport ''--prefix PATH : ${bazaar}/bin \''}
       ${lib.optionalString cvsSupport ''--prefix PATH : ${cvs}/bin \''}
       ${lib.optionalString cvsSupport ''--prefix PATH : ${cvsps}/bin \''}
-      ${lib.optionalString subversionSupport ''--prefix PATH : ${subversion}/bin \''}
+      ${lib.optionalString subversionSupport ''--prefix PATH : ${subversion.out}/bin \''}
       ${lib.optionalString mercurialSupport ''--prefix PATH : ${mercurial}/bin \''}
       ${lib.concatMapStrings (x: "--prefix PATH : ${x}/bin ") extraUtils}
     done
@@ -86,6 +86,6 @@ stdenv.mkDerivation {
     license = stdenv.lib.licenses.gpl2Plus;
 
     platforms = stdenv.lib.platforms.linux;
-    maintainers = [ stdenv.lib.maintainers.simons ];
+    maintainers = [ stdenv.lib.maintainers.peti ];
   };
 }

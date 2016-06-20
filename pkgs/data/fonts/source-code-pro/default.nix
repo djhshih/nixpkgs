@@ -1,12 +1,15 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchFromGitHub }:
 
 stdenv.mkDerivation rec {
   name = "source-code-pro-${version}";
-  version = "1.017";
+  version = "2.010";
 
-  src = fetchurl {
-    url="https://github.com/adobe-fonts/source-code-pro/archive/${version}R.tar.gz";
-    sha256="03q4a0f142c6zlngv6kjaik52y0yzwq5z5qj3j0fvvcbfy9sanjr";
+  src = fetchFromGitHub {
+    owner = "adobe-fonts";
+    repo = "source-code-pro";
+    rev = "2.010R-ro/1.030R-it";
+    name = "2.010R-ro-1.030R-it";
+    sha256 = "0f40g23lfcajpd5m9r1z7v8x011dsfs6ba7fihjal6yzaf5hb6mh";
   };
 
   phases = "unpackPhase installPhase";

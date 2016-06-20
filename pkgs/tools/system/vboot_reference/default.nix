@@ -7,9 +7,9 @@ stdenv.mkDerivation rec {
   name = "vboot_reference-${version}";
 
   src = fetchgit {
-    url = "http://git.chromium.org/git/chromiumos/platform/vboot_reference.git";
+    url = https://chromium.googlesource.com/chromiumos/platform/vboot_reference;
     rev = "refs/changes/${checkout}";
-    sha256 = "00qhwhh5ygrcfm9is8hrk1spqdvfs6aa744h10jbr03zics5bvac";
+    sha256 = "14d3a93ha5k4al4ib43nyn1ppx7kgb12xw6mkflhx8nxmx8827nc";
   };
 
   buildInputs = [ pkgconfig openssl ] ++

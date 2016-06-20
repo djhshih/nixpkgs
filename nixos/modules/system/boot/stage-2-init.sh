@@ -41,6 +41,8 @@ if [ ! -e /proc/1 ]; then
     mount -n -t proc proc /proc
     mkdir -m 0755 -p /dev
     mount -t devtmpfs devtmpfs /dev
+    mkdir -m 0755 -p /sys
+    mount -t sysfs sysfs /sys
 fi
 
 
@@ -85,8 +87,10 @@ done
 
 
 # More special file systems, initialise required directories.
-mkdir -m 0755 /dev/shm
-mount -t tmpfs -o "rw,nosuid,nodev,size=@devShmSize@" tmpfs /dev/shm
+if ! mountpoint -q /dev/shm; then
+    mkdir -m 0755 /dev/shm
+    mount -t tmpfs -o "rw,nosuid,nodev,size=@devShmSize@" tmpfs /dev/shm
+fi
 mkdir -m 0755 -p /dev/pts
 [ -e /proc/bus/usb ] && mount -t usbfs usbfs /proc/bus/usb # UML doesn't have USB by default
 mkdir -m 01777 -p /tmp
@@ -153,6 +157,21 @@ mkdir -m 0755 -p /var/setuid-wrappers
 mount -t tmpfs -o "mode=0755" tmpfs /var/setuid-wrappers
 
 
+# Log the script output to /dev/kmsg or /run/log/stage-2-init.log.
+# Only at this point are all the necessary prerequisites ready for these commands.
+exec {logOutFd}>&1 {logErrFd}>&2
+if test -w /dev/kmsg; then
+    exec > >(tee -i /proc/self/fd/"$logOutFd" | while read -r line; do
+        if test -n "$line"; then
+            echo "<7>stage-2-init: $line" > /dev/kmsg
+        fi
+    done) 2>&1
+else
+    mkdir -p /run/log
+    exec > >(tee -i /run/log/stage-2-init.log) 2>&1
+fi
+
+
 # Run the script that performs all configuration activation that does
 # not have to be done at boot time.
 echo "running activation script..."
@@ -162,7 +181,9 @@ $systemConfig/activate
 # Restore the system time from the hardware clock.  We do this after
 # running the activation script to be sure that /etc/localtime points
 # at the current time zone.
-hwclock --hctosys
+if [ -e /dev/rtc ]; then
+    hwclock --hctosys
+fi
 
 
 # Record the boot configuration.
@@ -176,6 +197,11 @@ ln -sfn /run/booted-system /nix/var/nix/gcroots/booted-system
 
 # Run any user-specified commands.
 @shell@ @postBootCommands@
+
+
+# Reset the logging file descriptors.
+exec 1>&$logOutFd 2>&$logErrFd
+exec {logOutFd}>&- {logErrFd}>&-
 
 
 # Start systemd.

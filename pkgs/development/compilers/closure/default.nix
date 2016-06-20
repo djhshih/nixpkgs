@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation rec {
   name = "closure-compiler-${version}";
-  version = "20150315";
+  version = "20160208";
 
   src = fetchurl {
     url = "http://dl.google.com/closure-compiler/compiler-${version}.tar.gz";
-    sha256 = "1vzwyhpqbrndg7mri81f1b2yi8cshw5pghvdda9vdxgq465sa52f";
+    sha256 = "19v9z8lfxfmhc4cl9fys7vnaslqiznjy1jpk5mcv468p7vysg46p";
   };
 
   phases = [ "installPhase" ];
@@ -26,6 +26,6 @@ stdenv.mkDerivation rec {
     description = "A tool for making JavaScript download and run faster";
     homepage = https://developers.google.com/closure/compiler/;
     license = stdenv.lib.licenses.asl20;
-    platforms = stdenv.lib.platforms.linux;
+    platforms = stdenv.lib.platforms.unix;
   };
 }

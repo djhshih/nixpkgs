@@ -22,24 +22,25 @@ let
     src = ./nixos-install.sh;
 
     inherit (pkgs) perl pathsFromGraph;
-    nix = config.nix.package;
+    nix = config.nix.package.out;
 
     nixClosure = pkgs.runCommand "closure"
-      { exportReferencesGraph = ["refs" config.nix.package]; }
+      { exportReferencesGraph = ["refs" config.nix.package.out]; }
       "cp refs $out";
   };
 
   nixos-rebuild = makeProg {
     name = "nixos-rebuild";
     src = ./nixos-rebuild.sh;
-    nix = config.nix.package;
+    nix = config.nix.package.out;
   };
 
   nixos-generate-config = makeProg {
     name = "nixos-generate-config";
     src = ./nixos-generate-config.pl;
-    path = [ pkgs.btrfsProgs ];
+    path = [ pkgs.btrfs-progs ];
     perl = "${pkgs.perl}/bin/perl -I${pkgs.perlPackages.FileSlurp}/lib/perl5/site_perl";
+    inherit (config.system) nixosRelease;
   };
 
   nixos-option = makeProg {
@@ -56,7 +57,9 @@ let
 in
 
 {
+
   config = {
+
     environment.systemPackages =
       [ nixos-build-vms
         nixos-install
@@ -69,5 +72,7 @@ in
     system.build = {
       inherit nixos-install nixos-generate-config nixos-option nixos-rebuild;
     };
+
   };
+
 }

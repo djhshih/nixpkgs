@@ -1,39 +1,37 @@
-{ lib, goPackages, fetchurl, callPackage }:
+{ stdenv, lib, buildGoPackage, fetchFromGitHub }:
 
-with goPackages;
-
+let
+  tools = [
+    "bsondump" "mongodump" "mongoexport" "mongofiles" "mongoimport"
+    "mongooplog" "mongorestore" "mongostat" "mongotop"
+  ];
+in
 buildGoPackage rec {
-  version = "r3.1.2";
-  name = "mongodb-tools";
+  name = "mongo-tools-${version}";
+  version = "3.0.12";
+  rev = "r${version}";
+
   goPackagePath = "github.com/mongodb/mongo-tools";
+  subPackages = map (t: t + "/main") tools;
 
-  src = fetchurl {
-    name = "${name}.tar.gz";
-    url = "https://github.com/mongodb/mongo-tools/archive/${version}.tar.gz";
-    sha256 = "1dag8ar95jlfk6rm99y4p3dymcy2s2qnwd9jwqhw9fxr110mgf5s";
+  src = fetchFromGitHub {
+    inherit rev;
+    owner = "mongodb";
+    repo = "mongo-tools";
+    sha256 = "142vxgniri1mfy2xmfgxhbdp6k6h8c5milv454krv1b51v43hsbm";
   };
 
-  buildInputs = [ gopass go-flags crypto mgo openssl spacelog
-    oglematchers goconvey tomb ];
+  goDeps = ./deps.json;
 
-  subPackages = [ "bsondump/main" "mongostat/main" "mongofiles/main"
-    "mongoexport/main" "mongoimport/main" "mongorestore/main"
-    "mongodump/main" "mongotop/main" "mongooplog/main" ];
-
-  buildPhase = ''
-    for i in bsondump mongostat mongofiles mongoexport mongoimport mongorestore mongodump mongotop mongooplog; do
-      echo Building $i
-      go build -o go/bin/$i go/src/${goPackagePath}/$i/main/$i.go
-    done
+  # Mongodb incorrectly names all of their binaries main
+  # Let's work around this with our own installer
+  preInstall = ''
+    mkdir -p $bin/bin
+  '' + toString (map (t: ''
+      go install $goPackagePath/${t}/main
+      mv go/bin/main $bin/bin/${t}
+  ''
+  ) tools) + ''  
+    rm -r go/bin
   '';
-
-  dontInstallSrc = true;
-
-  meta = with lib; {
-    description = "Tools for MongoDB";
-    homepage = https://github.com/mongodb/mongo-tools;
-    license = licenses.asl20;
-    maintainers = with maintainers; [ mschristiansen ];
-    platforms = platforms.linux;
-  };
 }

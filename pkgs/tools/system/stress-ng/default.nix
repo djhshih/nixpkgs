@@ -1,15 +1,15 @@
-{ stdenv, fetchurl, attr }:
+{ stdenv, fetchurl, attr, keyutils }:
 
-let version = "0.04.10"; in
 stdenv.mkDerivation rec {
   name = "stress-ng-${version}";
+  version = "0.06.01";
 
   src = fetchurl {
-    sha256 = "1y0jmcgwn8np22r3ajg7giai8dvfg0r5ddpgbiqs48cx2gz7iyhf";
+    sha256 = "1bk3sj6gyrgp5qfxiz6k7zml28m01iljgvxhp4yq391xzfyvrlg9";
     url = "http://kernel.ubuntu.com/~cking/tarballs/stress-ng/${name}.tar.gz";
   };
 
-  buildInputs = [ attr ];
+  buildInputs = [ attr keyutils ];
 
   patchPhase = ''
     substituteInPlace Makefile --replace "/usr" ""
@@ -17,10 +17,9 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  installFlags = "DESTDIR=$(out)";
+  installFlags = [ "DESTDIR=$(out)" ];
 
   meta = with stdenv.lib; {
-    inherit version;
     description = "Stress test a computer system";
     longDescription = ''
       Stress test a system in various selectable ways, exercising both various
@@ -36,7 +35,7 @@ stdenv.mkDerivation rec {
     homepage = http://kernel.ubuntu.com/~cking/stress-ng;
     downloadPage = http://kernel.ubuntu.com/~cking/tarballs/stress-ng/;
     license = licenses.gpl2Plus;
-    platforms = with platforms; linux;
+    platforms = platforms.linux;
     maintainers = with maintainers; [ nckx ];
   };
 }

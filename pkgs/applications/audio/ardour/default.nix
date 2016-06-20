@@ -1,4 +1,4 @@
-{ stdenv, fetchgit, alsaLib, aubio, boost, cairomm, curl, doxygen, dbus, fftw
+{ stdenv, fetchFromGitHub, alsaLib, aubio, boost, cairomm, curl, doxygen, dbus, fftw
 , fftwSinglePrec, flac, glibc, glibmm, graphviz, gtk, gtkmm, libjack2
 , libgnomecanvas, libgnomecanvasmm, liblo, libmad, libogg, librdf
 , librdf_raptor, librdf_rasqal, libsamplerate, libsigcxx, libsndfile
@@ -15,24 +15,21 @@ let
   # "git describe" when _not_ on an annotated tag(!): MAJOR.MINOR-REV-HASH.
 
   # Version to build.
-  tag = "4.0";
-
-  # Version info that is built into the binary. Keep in sync with 'tag'. The
-  # last 8 digits is a (fake) commit id.
-  revision = "4.0-e1aa66cb3f";
+  tag = "4.7";
 
 in
 
 stdenv.mkDerivation rec {
   name = "ardour-${tag}";
 
-  src = fetchgit {
-    url = git://git.ardour.org/ardour/ardour.git;
-    rev = "e1aa66cb3f";
-    sha256 = "396668fb9116a68f5079f0d880930e890fd0cdf7ee5f3b97fcf44b88cf840b4c";
+  src = fetchFromGitHub {
+    owner = "Ardour";
+    repo = "ardour";
+    rev = "d84a8222f2b6dab5028b2586f798535a8766670e";
+    sha256 = "149gswphz77m3pkzsn2nqbm6yvcfa3fva560bcvjzlgb73f64q5l";
   };
 
-  buildInputs = 
+  buildInputs =
     [ alsaLib aubio boost cairomm curl doxygen dbus fftw fftwSinglePrec flac glibc
       glibmm graphviz gtk gtkmm libjack2 libgnomecanvas libgnomecanvasmm liblo
       libmad libogg librdf librdf_raptor librdf_rasqal libsamplerate
@@ -40,9 +37,12 @@ stdenv.mkDerivation rec {
       makeWrapper pango perl pkgconfig python rubberband serd sord-svn sratom suil taglib vampSDK
     ];
 
+  # ardour's wscript has a "tarball" target but that required the git revision
+  # be available. Since this is an unzipped tarball fetched from github we
+  # have to do that ourself.
   patchPhase = ''
-    printf '#include "libs/ardour/ardour/revision.h"\nnamespace ARDOUR { const char* revision = \"${revision}\"; }\n' > libs/ardour/revision.cc
-    sed 's|/usr/include/libintl.h|${glibc}/include/libintl.h|' -i wscript
+    printf '#include "libs/ardour/ardour/revision.h"\nnamespace ARDOUR { const char* revision = \"${tag}-${builtins.substring 0 8 src.rev}\"; }\n' > libs/ardour/revision.cc
+    sed 's|/usr/include/libintl.h|${glibc.dev}/include/libintl.h|' -i wscript
     patchShebangs ./tools/
   '';
 
@@ -83,6 +83,6 @@ stdenv.mkDerivation rec {
     homepage = http://ardour.org/;
     license = licenses.gpl2;
     platforms = platforms.linux;
-    maintainers = [ maintainers.goibhniu ];
+    maintainers = [ maintainers.goibhniu maintainers.fps ];
   };
 }

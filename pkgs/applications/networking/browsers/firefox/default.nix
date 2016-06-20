@@ -1,9 +1,10 @@
 { lib, stdenv, fetchurl, pkgconfig, gtk, gtk3, pango, perl, python, zip, libIDL
-, libjpeg, zlib, dbus, dbus_glib, bzip2, xlibs
+, libjpeg, zlib, dbus, dbus_glib, bzip2, xorg
 , freetype, fontconfig, file, alsaLib, nspr, nss, libnotify
 , yasm, mesa, sqlite, unzip, makeWrapper, pysqlite
 , hunspell, libevent, libstartup_notification, libvpx
-, cairo, gstreamer, gst_plugins_base, icu
+, cairo, gstreamer, gst_plugins_base, icu, libpng, jemalloc, libpulseaudio
+, autoconf213, which
 , enableGTK3 ? false
 , debugBuild ? false
 , # If you want the resulting program to call itself "Firefox" instead
@@ -16,27 +17,33 @@
 
 assert stdenv.cc ? libc && stdenv.cc.libc != null;
 
-let version = "39.0"; in
+let
 
-stdenv.mkDerivation rec {
-  name = "firefox-${version}";
+common = { pname, version, sha512 }: stdenv.mkDerivation rec {
+  name = "${pname}-unwrapped-${version}";
 
   src = fetchurl {
-    url = "http://ftp.mozilla.org/pub/mozilla.org/firefox/releases/${version}/source/firefox-${version}.source.tar.bz2";
-    sha1 = "32785daee7ddb9da8d7509ef095258fc58fe838e";
+    url =
+      let ext = if lib.versionAtLeast version "41.0" then "xz" else "bz2";
+      in "mirror://mozilla/firefox/releases/${version}/source/firefox-${version}.source.tar.${ext}";
+    inherit sha512;
   };
 
   buildInputs =
     [ pkgconfig gtk perl zip libIDL libjpeg zlib bzip2
-      python dbus dbus_glib pango freetype fontconfig xlibs.libXi
-      xlibs.libX11 xlibs.libXrender xlibs.libXft xlibs.libXt file
-      alsaLib nspr nss libnotify xlibs.pixman yasm mesa
-      xlibs.libXScrnSaver xlibs.scrnsaverproto pysqlite
-      xlibs.libXext xlibs.xextproto sqlite unzip makeWrapper
-      hunspell libevent libstartup_notification libvpx cairo
-      gstreamer gst_plugins_base icu
+      python dbus dbus_glib pango freetype fontconfig xorg.libXi
+      xorg.libX11 xorg.libXrender xorg.libXft xorg.libXt file
+      alsaLib nspr nss libnotify xorg.pixman yasm mesa
+      xorg.libXScrnSaver xorg.scrnsaverproto pysqlite
+      xorg.libXext xorg.xextproto sqlite unzip makeWrapper
+      hunspell libevent libstartup_notification libvpx /* cairo */
+      icu libpng jemalloc
+      libpulseaudio # only headers are needed
     ]
-    ++ lib.optional enableGTK3 gtk3;
+    ++ lib.optional enableGTK3 gtk3
+    ++ lib.optionals (!passthru.ffmpegSupport) [ gstreamer gst_plugins_base ];
+
+  nativeBuildInputs = [autoconf213 which];
 
   configureFlags =
     [ "--enable-application=browser"
@@ -48,28 +55,29 @@ stdenv.mkDerivation rec {
       "--with-system-nss"
       "--with-system-libevent"
       "--with-system-libvpx"
-      # "--with-system-png" # needs APNG support
-      # "--with-system-icu" # causes ‘ar: invalid option -- 'L'’ in Firefox 28.0
+      "--with-system-png" # needs APNG support
+      "--with-system-icu"
       "--enable-system-ffi"
       "--enable-system-hunspell"
       "--enable-system-pixman"
       "--enable-system-sqlite"
-      "--enable-system-cairo"
-      "--enable-gstreamer"
+      #"--enable-system-cairo"
       "--enable-startup-notification"
-      # "--enable-content-sandbox"            # available since 26.0, but not much info available
-      # "--enable-content-sandbox-reporter"   # keeping disabled for now
+      "--enable-content-sandbox"            # available since 26.0, but not much info available
+      "--disable-content-sandbox-reporter"  # keeping disabled for now
       "--disable-crashreporter"
       "--disable-tests"
       "--disable-necko-wifi" # maybe we want to enable this at some point
       "--disable-installer"
       "--disable-updater"
-      "--disable-pulseaudio"
+      "--enable-jemalloc"
+      "--disable-gconf"
+      "--enable-default-toolkit=cairo-gtk2"
     ]
     ++ lib.optional enableGTK3 "--enable-default-toolkit=cairo-gtk3"
-    ++ (if debugBuild then [ "--enable-debug" "--enable-profiling"]
+    ++ (if debugBuild then [ "--enable-debug" "--enable-profiling" ]
                       else [ "--disable-debug" "--enable-release"
-                             "--enable-optimize${lib.optionalString (stdenv.system == "i686-linux") "=-O1"}"
+                             "--enable-optimize"
                              "--enable-strip" ])
     ++ lib.optional enableOfficialBranding "--enable-official-branding";
 
@@ -77,9 +85,9 @@ stdenv.mkDerivation rec {
 
   preConfigure =
     ''
+      configureScript="$(realpath ./configure)"
       mkdir ../objdir
       cd ../objdir
-      configureScript=../mozilla-release/configure
     '';
 
   preInstall =
@@ -91,19 +99,25 @@ stdenv.mkDerivation rec {
   postInstall =
     ''
       # For grsecurity kernels
-      paxmark m $out/lib/${name}/{firefox,firefox-bin,plugin-container}
+      paxmark m $out/lib/${pname}-${version}/{firefox,firefox-bin,plugin-container}
 
       # Remove SDK cruft. FIXME: move to a separate output?
       rm -rf $out/share/idl $out/include $out/lib/firefox-devel-*
     '' + lib.optionalString enableGTK3
+      # argv[0] must point to firefox itself
     ''
       wrapProgram "$out/bin/firefox" \
+        --argv0 "$out/bin/.firefox-wrapped" \
         --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH:" \
         --suffix XDG_DATA_DIRS : "$XDG_ICON_DIRS"
+    '' +
+      # some basic testing
+    ''
+      "$out/bin/firefox" --version
     '';
 
   meta = {
-    description = "Web browser";
+    description = "A web browser" + lib.optionalString (pname == "firefox-esr") " (Extended Support Release)";
     homepage = http://www.mozilla.com/en-US/firefox/;
     maintainers = with lib.maintainers; [ eelco ];
     platforms = lib.platforms.linux;
@@ -112,5 +126,23 @@ stdenv.mkDerivation rec {
   passthru = {
     inherit gtk nspr version;
     isFirefox3Like = true;
+    browserName = "firefox";
+    ffmpegSupport = lib.versionAtLeast version "46.0";
   };
+};
+
+in {
+
+  firefox-unwrapped = common {
+    pname = "firefox";
+    version = "47.0";
+    sha512 = "35275e5595e7f01a232e5ea6d7899857d0a1d7eab640fe614ef66c865abedae3e08bc6c0cde13165d53140ccf6f721bbcd583d091032e119d44884287393c223";
+  };
+
+  firefox-esr-unwrapped = common {
+    pname = "firefox-esr";
+    version = "45.1.1esr";
+    sha512 = "ee6bccdf01450c5b371e31c35f5bb084ad49f796fcc9cf3a346646972044ad85ce198cc34b697c32e2d3ad1e25955ef5b91b68790704ecaa4de9d3a412914fc7";
+  };
+
 }

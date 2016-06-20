@@ -1,25 +1,20 @@
-{ lib, goPackages, fetchFromGitHub }:
-
-with goPackages;
+{ stdenv, lib, libpcap, buildGoPackage, fetchFromGitHub }:
 
 buildGoPackage rec {
-  version = "2.0.0";
   name = "etcd-${version}";
+  version = "2.3.0";
+  rev = "v${version}";
+  
   goPackagePath = "github.com/coreos/etcd";
+
   src = fetchFromGitHub {
+    inherit rev;
     owner = "coreos";
     repo = "etcd";
-    rev = "v${version}";
-    sha256 = "1s3jilzlqyh2i81pv79cgap6dfj7qrfrwcv4w9lic5ivznz413vc";
+    sha256 = "1cchlhsdbbqal145cvdiq7rzqqi131iq7z0r2hmzwx414k04wyn7";
   };
 
-  subPackages = [ "./" ];
+  goDeps = ./deps.json;
 
-  meta = with lib; {
-    description = "A highly-available key value store for shared configuration and service discovery";
-    homepage = http://coreos.com/using-coreos/etcd/;
-    license = licenses.asl20;
-    maintainers = with maintainers; [ cstrahan ];
-    platforms = platforms.unix;
-  };
+  buildInputs = [ libpcap ];
 }

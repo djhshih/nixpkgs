@@ -73,11 +73,6 @@ if ! test -e "$mountPoint"; then
     exit 1
 fi
 
-if ! grep -F -q " $mountPoint " /proc/mounts; then
-    echo "$mountPoint doesn't appear to be a mount point"
-    exit 1
-fi
-
 
 # Mount some stuff in the target root directory.
 mkdir -m 0755 -p $mountPoint/dev $mountPoint/proc $mountPoint/sys $mountPoint/etc $mountPoint/run $mountPoint/home
@@ -188,6 +183,9 @@ mkdir -m 0755 -p $mountPoint/bin
 ln -sf @shell@ $mountPoint/bin/sh
 
 
+# Build hooks likely won't function correctly in the minimal chroot; just disable them.
+unset NIX_BUILD_HOOK
+
 # Make the build below copy paths from the CD if possible.  Note that
 # /tmp/root in the chroot is the root of the CD.
 export NIX_OTHER_STORES=/tmp/root/nix:$NIX_OTHER_STORES
@@ -256,14 +254,8 @@ NIXOS_INSTALL_GRUB=1 chroot $mountPoint \
 chroot $mountPoint /nix/var/nix/profiles/system/activate
 
 
-# Some systems may not be prepared to use NixOS' paths.
-export PATH=/run/current-system/sw/bin:/run/current-system/sw/sbin:$PATH
-export NIX_PATH=/nix/var/nix/profiles/per-user/root/channels/nixos:nixpkgs=/etc/nixos/nixpkgs
-export NIX_PATH=$NIX_PATH:nixos-config=/etc/nixos/configuration.nix:/nix/var/nix/profiles/per-user/root/channels
-
-
 # Ask the user to set a root password.
-if [ "$(chroot $mountPoint nix-instantiate --eval '<nixpkgs/nixos>' -A config.users.mutableUsers)" = true ] && [ -t 0 ] ; then
+if [ "$(chroot $mountPoint /run/current-system/sw/bin/sh -l -c "nix-instantiate --eval '<nixpkgs/nixos>' -A config.users.mutableUsers")" = true ] && [ -t 0 ] ; then
     echo "setting root password..."
     chroot $mountPoint /var/setuid-wrappers/passwd
 fi

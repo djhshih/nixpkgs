@@ -22,12 +22,13 @@ stdenv.mkDerivation rec {
 
   preAutoreconf = ''
     substituteInPlace configure.ac --replace AM_GCONF_SOURCE_2 ""
+    substituteInPlace configure.ac --replace gnome-icon-theme adwaita-icon-theme
   '';
 
   configureFlags = [
-    "--with-ldap-dir=${openldap}"
-    "--with-libsasl2-dir=${cyrus_sasl}"
-    "--with-boost-libdir=${boost.lib}/lib"
+    "--with-ldap-dir=${openldap.dev}"
+    "--with-libsasl2-dir=${cyrus_sasl.dev}"
+    "--with-boost-libdir=${boost.out}/lib"
     "--disable-gconf"
   ];
 

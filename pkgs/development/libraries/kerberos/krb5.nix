@@ -1,41 +1,59 @@
-{ stdenv, fetchurl, pkgconfig, perl, ncurses, yacc, openssl, openldap, bootstrap_cmds }:
+{ stdenv, fetchurl, pkgconfig, perl, yacc, bootstrap_cmds
+, openssl, openldap, libedit
+
+# Extra Arguments
+, type ? ""
+}:
 
 let
-  pname = "krb5";
-  version = "1.13.1";
-  name = "${pname}-${version}";
-  webpage = http://web.mit.edu/kerberos/;
+  libOnly = type == "lib";
 in
-
-stdenv.mkDerivation (rec {
-  inherit name;
+with stdenv.lib;
+stdenv.mkDerivation rec {
+  name = "${type}krb5-${version}";
+  version = "1.14.2";
 
   src = fetchurl {
-    url = "${webpage}dist/krb5/1.13/${name}-signed.tar";
-    sha256 = "0gk6jvr64rf6l4xcyxn8i3fr5d1j7dhqvwyv3vw2qdkzz7yjkxjd";
+    url = "${meta.homepage}dist/krb5/1.14/krb5-${version}.tar.gz";
+    sha256 = "09wbv969ak4fqlqr1ip5bi62fny1zlp1vwjarvj6a6cdfzkdgjkb";
   };
 
-  buildInputs = [ pkgconfig perl ncurses yacc openssl openldap ]
-    # Provides the mig command used by the build scripts
-    ++ stdenv.lib.optional stdenv.isDarwin bootstrap_cmds ;
+  configureFlags = optional stdenv.isFreeBSD ''WARN_CFLAGS=""'';
 
-  unpackPhase = ''
-    tar -xf $src
-    tar -xzf ${name}.tar.gz
-    cd ${name}/src
+  nativeBuildInputs = [ pkgconfig perl yacc ]
+    # Provides the mig command used by the build scripts
+    ++ optional stdenv.isDarwin bootstrap_cmds;
+  buildInputs = [ openssl ]
+    ++ optionals (!libOnly) [ openldap libedit ];
+
+  preConfigure = "cd ./src";
+
+  buildPhase = optionalString libOnly ''
+    (cd util; make -j $NIX_BUILD_CORES)
+    (cd include; make -j $NIX_BUILD_CORES)
+    (cd lib; make -j $NIX_BUILD_CORES)
+    (cd build-tools; make -j $NIX_BUILD_CORES)
   '';
 
-  configureFlags = [ "--with-tcl=no" ];
+  installPhase = optionalString libOnly ''
+    mkdir -p $out/{bin,include/{gssapi,gssrpc,kadm5,krb5},lib/pkgconfig,sbin,share/{et,man/man1}}
+    (cd util; make -j $NIX_BUILD_CORES install)
+    (cd include; make -j $NIX_BUILD_CORES install)
+    (cd lib; make -j $NIX_BUILD_CORES install)
+    (cd build-tools; make -j $NIX_BUILD_CORES install)
+    rm -rf $out/{sbin,share}
+    find $out/bin -type f | grep -v 'krb5-config' | xargs rm
+  '';
 
   enableParallelBuilding = true;
 
-  meta = with stdenv.lib; {
+  meta = {
     description = "MIT Kerberos 5";
-    homepage = webpage;
-    license = "MPL";
+    homepage = http://web.mit.edu/kerberos/;
+    license = licenses.mit;
     platforms = platforms.unix;
     maintainers = with maintainers; [ wkennington ];
   };
 
   passthru.implementation = "krb5";
-})
+}

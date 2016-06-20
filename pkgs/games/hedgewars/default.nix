@@ -1,43 +1,41 @@
 { SDL_image, SDL_ttf, SDL_net, fpc, qt4, ghcWithPackages, ffmpeg, freeglut
 , stdenv, makeWrapper, fetchurl, cmake, pkgconfig, lua5_1, SDL, SDL_mixer
-, zlib, libpng, mesa
+, zlib, libpng, mesa, physfs
 }:
 
 let
   ghc = ghcWithPackages (pkgs: with pkgs; [
-          network vector utf8-string bytestring-show random hslogger dataenc
+          network vector utf8-string bytestring-show random hslogger dataenc SHA entropy zlib_0_5_4_2
         ]);
 in
 stdenv.mkDerivation rec {
-  version = "0.9.20.5";
+  version = "0.9.22";
   name = "hedgewars-${version}";
   src = fetchurl {
     url = "http://download.gna.org/hedgewars/hedgewars-src-${version}.tar.bz2";
-    sha256 = "1k5dq14s9pshrqlz8vnix237bcapfif4k3rc4yj4cmwdx1pqkl56";
+    sha256 = "14i1wvqbqib9h9092z10g4g0y14r5sp2fdaksvnw687l3ybwi6dn";
   };
 
   buildInputs = [
     SDL_ttf SDL_net cmake pkgconfig lua5_1 SDL SDL_mixer SDL_image fpc
-    qt4 ghc ffmpeg freeglut makeWrapper
+    qt4 ghc ffmpeg freeglut makeWrapper physfs
   ];
-
-  patches = [ ./fix-ghc-7.8-build-failure.diff ];
 
   preBuild = ''
     export NIX_LDFLAGS="$NIX_LDFLAGS -rpath ${SDL_image}/lib
                                      -rpath ${SDL_mixer}/lib
                                      -rpath ${SDL_net}/lib
                                      -rpath ${SDL_ttf}/lib
-                                     -rpath ${SDL}/lib
-                                     -rpath ${libpng}/lib
+                                     -rpath ${SDL.out}/lib
+                                     -rpath ${libpng.out}/lib
                                      -rpath ${lua5_1}/lib
                                      -rpath ${mesa}/lib
-                                     -rpath ${zlib}/lib
+                                     -rpath ${zlib.out}/lib
                                      "
   '';
 
   postInstall = ''
-    wrapProgram $out/bin/hwengine --prefix LD_LIBRARY_PATH : $LD_LIBRARY_PATH:${mesa}/lib/:${freeglut}/lib
+    wrapProgram $out/bin/hwengine --prefix LD_LIBRARY_PATH : $LD_LIBRARY_PATH:${mesa}/lib/:${freeglut}/lib:${physfs}/lib
   '';
 
   meta = with stdenv.lib; {

@@ -14,10 +14,10 @@ stdenv.mkDerivation rec {
   buildInputs = [ ghc perl gmp ncurses ];
 
   buildMK = ''
-    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-libraries="${gmp}/lib"
-    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-includes="${gmp}/include"
-    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-includes="${ncurses}/include"
-    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-libraries="${ncurses}/lib"
+    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-libraries="${gmp.out}/lib"
+    libraries/integer-gmp_CONFIGURE_OPTS += --configure-option=--with-gmp-includes="${gmp.dev}/include"
+    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-includes="${ncurses.dev}/include"
+    libraries/terminfo_CONFIGURE_OPTS += --configure-option=--with-curses-libraries="${ncurses.out}/lib"
     ${stdenv.lib.optionalString stdenv.isDarwin ''
       libraries/base_CONFIGURE_OPTS += --configure-option=--with-iconv-includes="${libiconv}/include"
       libraries/base_CONFIGURE_OPTS += --configure-option=--with-iconv-libraries="${libiconv}/lib"
@@ -33,7 +33,7 @@ stdenv.mkDerivation rec {
     export NIX_LDFLAGS+=" -no_dtrace_dof"
   '';
 
-  configureFlags = if stdenv.isDarwin then "--with-gcc=${../../haskell-modules/gcc-clang-wrapper.sh}"
+  configureFlags = if stdenv.isDarwin then "--with-gcc=${./gcc-clang-wrapper.sh}"
                                       else "--with-gcc=${stdenv.cc}/bin/gcc";
 
   NIX_CFLAGS_COMPILE = "-fomit-frame-pointer";
@@ -48,7 +48,7 @@ stdenv.mkDerivation rec {
     maintainers = [
       stdenv.lib.maintainers.marcweber
       stdenv.lib.maintainers.andres
-      stdenv.lib.maintainers.simons
+      stdenv.lib.maintainers.peti
     ];
     platforms = ["x86_64-linux" "i686-linux"];  # Darwin is not supported.
     inherit (ghc.meta) license;

@@ -3,27 +3,22 @@
 with stdenv.lib;
 
 stdenv.mkDerivation rec {
-  name = "openvpn-2.3.6";
+  name = "openvpn-2.3.10";
 
   src = fetchurl {
     url = "http://swupdate.openvpn.net/community/releases/${name}.tar.gz";
-    sha256 = "09jvxr4wcsmk55gqv3cblm60kzs9ripv9h4y50d1lbn177zx5bkv";
+    sha256 = "1xn8kv4v4h4v8mhd9k4s9rilb7k30jgb9rm7n4fwmfrm5swvbc7q";
   };
 
   patches = optional stdenv.isLinux ./systemd-notify.patch;
 
-  buildInputs = [ iproute lzo openssl pam pkgconfig ] ++ optional stdenv.isLinux systemd;
+  buildInputs = [ lzo openssl pkgconfig ]
+                  ++ optionals stdenv.isLinux [ pam systemd iproute ];
 
-  configureFlags = ''
-    --enable-password-save
-    --enable-iproute2
+  configureFlags = optionalString stdenv.isLinux ''
     --enable-systemd
+    --enable-iproute2
     IPROUTE=${iproute}/sbin/ip
-  '';
-
-  preConfigure = ''
-    substituteInPlace ./src/openvpn/console.c \
-      --replace /bin/systemd-ask-password /run/current-system/sw/bin/systemd-ask-password
   '';
 
   postInstall = ''
@@ -34,8 +29,6 @@ stdenv.mkDerivation rec {
   '';
 
   enableParallelBuilding = true;
-
-  NIX_LDFLAGS = optionalString stdenv.isLinux "-lsystemd-daemon"; # hacky
 
   meta = {
     description = "A robust and highly flexible tunneling application";

@@ -1,9 +1,15 @@
 { stdenv, appleDerivation, launchd, bootstrap_cmds, xnu, ppp, IOKit, eap8021x, Security }:
 
 appleDerivation {
+  meta.broken = stdenv.cc.nativeLibc;
+
   buildInputs = [ launchd bootstrap_cmds xnu ppp IOKit eap8021x ];
 
   propagatedBuildInputs = [ Security ];
+
+  propagatedSandboxProfile = ''
+    (allow mach-lookup (global-name "com.apple.SystemConfiguration.configd"))
+  '';
 
   patchPhase = ''
     substituteInPlace SystemConfiguration.fproj/SCNetworkReachabilityInternal.h \

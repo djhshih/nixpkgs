@@ -1,5 +1,5 @@
 { stdenv, fetchurl
-, ejabberd ? null, mysql ? null, postgresql ? null, subversion ? null, mongodb ? null
+, ejabberd ? null, mysql ? null, postgresql ? null, subversion ? null, mongodb ? null, mongodb-tools ? null
 , enableApacheWebApplication ? false
 , enableAxis2WebService ? false
 , enableEjabberdDump ? false
@@ -17,13 +17,13 @@ assert enableMySQLDatabase -> mysql != null;
 assert enablePostgreSQLDatabase -> postgresql != null;
 assert enableSubversionRepository -> subversion != null;
 assert enableEjabberdDump -> ejabberd != null;
-assert enableMongoDatabase -> mongodb != null;
+assert enableMongoDatabase -> (mongodb != null && mongodb-tools != null);
 
 stdenv.mkDerivation {
-  name = "dysnomia-0.4";
+  name = "dysnomia-0.6";
   src = fetchurl {
-    url = http://hydra.nixos.org/build/23484767/download/1/dysnomia-0.4.tar.gz;
-    sha256 = "1xyd1gzsy4nlbv2l2lrrs964vvb74yhmb8snr4chf7hcyaybb6cq";
+    url = http://hydra.nixos.org/build/36895408/download/1/dysnomia-0.6.tar.gz;
+    sha256 = "1gg2avj57amxf2qi5zjk0rjyakvy5bqaar2r2151cvjlas1z1alw";
   };
   
   preConfigure = if enableEjabberdDump then "export PATH=$PATH:${ejabberd}/sbin" else "";
@@ -45,7 +45,8 @@ stdenv.mkDerivation {
     ++ stdenv.lib.optional enableMySQLDatabase mysql.out
     ++ stdenv.lib.optional enablePostgreSQLDatabase postgresql
     ++ stdenv.lib.optional enableSubversionRepository subversion
-    ++ stdenv.lib.optional enableMongoDatabase mongodb;
+    ++ stdenv.lib.optional enableMongoDatabase mongodb
+    ++ stdenv.lib.optional enableMongoDatabase mongodb-tools;
 
   meta = {
     description = "Automated deployment of mutable components and services for Disnix";

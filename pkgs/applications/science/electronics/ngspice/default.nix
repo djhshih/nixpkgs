@@ -1,7 +1,7 @@
 {stdenv, fetchurl, readline, bison, libX11, libICE, libXaw, libXext}:
 
 stdenv.mkDerivation {
-  name = "ng-spice-rework-25";
+  name = "ngspice-25";
 
   src = fetchurl {
     url = "mirror://sourceforge/ngspice/ngspice-25.tar.gz";
@@ -17,6 +17,6 @@ stdenv.mkDerivation {
     homepage = "http://ngspice.sourceforge.net";
     license = with licenses; [ "BSD" gpl2 ];
     maintainers = with maintainers; [ viric ];
-    platforms = with platforms; linux;
+    platforms = platforms.linux;
   };
 }

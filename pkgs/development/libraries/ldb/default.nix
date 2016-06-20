@@ -3,11 +3,11 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "ldb-1.1.20";
+  name = "ldb-1.1.26";
 
   src = fetchurl {
     url = "mirror://samba/ldb/${name}.tar.gz";
-    sha256 = "1ckplfvr8rp5y632w5j0abdgkj3irbzjh1wn0yxadnhz4ymknjds";
+    sha256 = "1rmjv12pf57vga8s5z9p9d90rlfckc1lqjbcp89r83cq5fkwfhw8";
   };
 
   buildInputs = [
@@ -16,7 +16,6 @@ stdenv.mkDerivation rec {
   ];
 
   preConfigure = ''
-    echo $PYTHONPATH
     sed -i 's,#!/usr/bin/env python,#!${python}/bin/python,g' buildtools/bin/waf
   '';
 
@@ -26,7 +25,7 @@ stdenv.mkDerivation rec {
   ];
 
   meta = with stdenv.lib; {
-    description = "a LDAP-like embedded database";
+    description = "A LDAP-like embedded database";
     homepage = http://ldb.samba.org/;
     license = licenses.lgpl3Plus;
     maintainers = with maintainers; [ wkennington ];

@@ -2,7 +2,7 @@ makeWrapper() {
     local original=$1
     local wrapper=$2
     local params varName value command separator n fileNames
-    local flagsBefore flags
+    local argv0 flagsBefore flags
 
     mkdir -p "$(dirname $wrapper)"
 
@@ -17,6 +17,12 @@ makeWrapper() {
             value=${params[$((n + 2))]}
             n=$((n + 2))
             echo "export $varName=$value" >> $wrapper
+        fi
+
+        if test "$p" = "--unset"; then
+            varName=${params[$((n + 1))]}
+            n=$((n + 1))
+            echo "unset $varName" >> "$wrapper"
         fi
 
         if test "$p" = "--run"; then
@@ -68,12 +74,18 @@ makeWrapper() {
             n=$((n + 1))
             flagsBefore="$flagsBefore $flags"
         fi
+
+        if test "$p" = "--argv0"; then
+            argv0=${params[$((n + 1))]}
+            n=$((n + 1))
+        fi
     done
 
     # Note: extraFlagsArray is an array containing additional flags
     # that may be set by --run actions.
-    echo exec "$original" $flagsBefore '"${extraFlagsArray[@]}"' '"$@"' >> $wrapper
-    
+    echo exec ${argv0:+-a $argv0} "$original" \
+         $flagsBefore '"${extraFlagsArray[@]}"' '"$@"' >> $wrapper
+
     chmod +x $wrapper
 }
 
@@ -98,5 +110,5 @@ wrapProgram() {
     local prog="$1"
     local hidden="$(dirname "$prog")/.$(basename "$prog")"-wrapped
     mv $prog $hidden
-    makeWrapper $hidden $prog "$@"
+    makeWrapper $hidden $prog --argv0 '"$0"' "$@"
 }

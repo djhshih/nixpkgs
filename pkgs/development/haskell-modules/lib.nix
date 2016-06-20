@@ -17,6 +17,7 @@ rec {
   doCheck = drv: overrideCabal drv (drv: { doCheck = true; });
   dontCheck = drv: overrideCabal drv (drv: { doCheck = false; });
 
+  doDistribute = drv: overrideCabal drv (drv: { hydraPlatforms = drv.platforms or ["i686-linux" "x86_64-linux" "x86_64-darwin"]; });
   dontDistribute = drv: overrideCabal drv (drv: { hydraPlatforms = []; });
 
   appendConfigureFlag = drv: x: overrideCabal drv (drv: { configureFlags = (drv.configureFlags or []) ++ [x]; });
@@ -30,6 +31,9 @@ rec {
 
   addBuildDepend = drv: x: addBuildDepends drv [x];
   addBuildDepends = drv: xs: overrideCabal drv (drv: { buildDepends = (drv.buildDepends or []) ++ xs; });
+
+  addPkgconfigDepend = drv: x: addPkgconfigDepends drv [x];
+  addPkgconfigDepends = drv: xs: overrideCabal drv (drv: { pkgconfigDepends = (drv.pkgconfigDepends or []) ++ xs; });
 
   enableCabalFlag = drv: x: appendConfigureFlag (removeConfigureFlag drv "-f-${x}") "-f${x}";
   disableCabalFlag = drv: x: appendConfigureFlag (removeConfigureFlag drv "-f${x}") "-f-${x}";
@@ -63,7 +67,7 @@ rec {
     buildPhase = "./Setup sdist";
     haddockPhase = ":";
     checkPhase = ":";
-    installPhase = "install -D dist/${drv.pname}-${drv.version}.tar.gz $out/${drv.pname}-${drv.version}.tar.gz";
+    installPhase = "install -D dist/${drv.pname}-*.tar.gz $out/${drv.pname}-${drv.version}.tar.gz";
     fixupPhase = ":";
   });
 
@@ -71,18 +75,14 @@ rec {
     unpackPhase = let src = sdistTarball pkg; tarname = "${pkg.pname}-${pkg.version}"; in ''
       echo "Source tarball is at ${src}/${tarname}.tar.gz"
       tar xf ${src}/${tarname}.tar.gz
-      cd ${tarname}
+      cd ${pkg.pname}-*
     '';
   });
 
   buildStrictly = pkg: buildFromSdist (appendConfigureFlag pkg "--ghc-option=-Wall --ghc-option=-Werror");
 
+  buildStackProject = pkgs.callPackage ./generic-stack-builder.nix { };
+
   triggerRebuild = drv: i: overrideCabal drv (drv: { postUnpack = ": trigger rebuild ${toString i}"; });
 
-  withHoogle = haskellEnv: with haskellEnv.haskellPackages;
-    import ./hoogle.nix {
-      inherit (pkgs) stdenv;
-      inherit hoogle rehoo ghc;
-      packages = haskellEnv.paths;
-    };
 }

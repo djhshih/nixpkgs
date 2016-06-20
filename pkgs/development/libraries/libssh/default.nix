@@ -1,19 +1,19 @@
 { stdenv, fetchurl, pkgconfig, cmake, zlib, openssl, libsodium }:
 
 stdenv.mkDerivation rec {
-  name = "libssh-0.7.0";
+  name = "libssh-0.7.3";
 
   src = fetchurl {
-    url = "https://git.libssh.org/projects/libssh.git/snapshot/${name}.tar.gz";
-    sha256 = "1wfrdqhv97f4ycd9bcpgb6gw47kr7b2iq8cz5knk8a6n9c6870k0";
+    url = "https://red.libssh.org/attachments/download/195/${name}.tar.xz";
+    sha256 = "165g49i4kmm3bfsjm0n8hm21kadv79g9yjqyq09138jxanz4dvr6";
   };
-
-  patches = [ ./0001-Reintroduce-ssh_forward_listen-Fixes-194.patch ];
 
   postPatch = ''
     # Fix headers to use libsodium instead of NaCl
     sed -i 's,nacl/,sodium/,g' ./include/libssh/curve25519.h src/curve25519.c
   '';
+
+  outputs = [ "dev" "out" ];
 
   buildInputs = [ zlib openssl libsodium ];
 

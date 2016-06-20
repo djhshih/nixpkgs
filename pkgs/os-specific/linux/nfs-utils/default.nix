@@ -1,18 +1,18 @@
 { fetchurl, stdenv, tcp_wrappers, utillinux, libcap, libtirpc, libevent, libnfsidmap
-, lvm2, e2fsprogs, python
+, lvm2, e2fsprogs, python, sqlite
 }:
 
 stdenv.mkDerivation rec {
-  name = "nfs-utils-1.2.5";
+  name = "nfs-utils-1.3.3";
 
   src = fetchurl {
     url = "mirror://sourceforge/nfs/${name}.tar.bz2";
-    sha256 = "16ssfkj36ljifyaskgwpd3ys8ylhi5gasq88aha3bhg5dr7yv59m";
+    sha256 = "1svn27j5c873nixm46l111g7cgyaj5zd51ahfq8mx5v9m3vh93py";
   };
 
   buildInputs =
     [ tcp_wrappers utillinux libcap libtirpc libevent libnfsidmap
-      lvm2 e2fsprogs python
+      lvm2 e2fsprogs python sqlite
     ];
 
   # FIXME: Add the dependencies needed for NFSv4 and TI-RPC.
@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
       "--with-statedir=/var/lib/nfs"
       "--with-tirpcinclude=${libtirpc}/include/tirpc"
     ]
-    ++ stdenv.lib.optional (stdenv ? glibc) "--with-rpcgen=${stdenv.glibc}/bin/rpcgen";
+    ++ stdenv.lib.optional (stdenv ? glibc) "--with-rpcgen=${stdenv.glibc.bin}/bin/rpcgen";
 
   patchPhase =
     ''
@@ -31,15 +31,12 @@ stdenv.mkDerivation rec {
         chmod +x "$i"
       done
       sed -i s,/usr/sbin,$out/sbin, utils/statd/statd.c
-
-      # https://bugzilla.redhat.com/show_bug.cgi?id=749195
-      sed -i s,PAGE_SIZE,getpagesize\(\), utils/blkmapd/device-process.c
     '';
 
   preBuild =
     ''
       makeFlags="sbindir=$out/sbin"
-      installFlags="statedir=$TMPDIR" # hack to make `make install' work
+      installFlags="statedir=$TMPDIR statdpath=$TMPDIR" # hack to make `make install' work
     '';
 
   # One test fails on mips.

@@ -1,12 +1,14 @@
-{ stdenv, fetchgit }:
+{ stdenv, fetchFromGitHub }:
 
-stdenv.mkDerivation {
-  name = "android-udev-rules-2015-02-28";
+stdenv.mkDerivation rec {
+  name = "android-udev-rules-${version}";
+  version = "2016-04-26";
 
-  src = fetchgit {
-    url = "git://github.com/M0Rf30/android-udev-rules";
-    rev = "2cc51a456ccfbca338c4e6b76211645aaac631e9";
-    sha256 = "dbf1614cebb466d1adbcc5f17cefc0c37f148f9e3b46443b3e82f6cd19a1514f";
+  src = fetchFromGitHub {
+    owner = "M0Rf30";
+    repo = "android-udev-rules";
+    rev = "9af6e552016392db35191142b599a5199cf8a9fa";
+    sha256 = "1lvh7md6qz91q8jy9phnfxlb19s104lvsk75a5r07d8bjc4w9pxb";
   };
 
   installPhase = ''

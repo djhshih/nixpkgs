@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation {
 
-  name = "ocaml-csv-1.4";
+  name = "ocaml-csv-1.4.2";
 
   src = fetchzip {
-    url = https://github.com/Chris00/ocaml-csv/releases/download/1.4/csv-1.4.tar.gz;
-    sha256 = "0si0v79rxzyzmgyhd6lidpzxdlcpprlhg0pgrsf688g83xsclkwa";
+    url = https://github.com/Chris00/ocaml-csv/releases/download/1.4.2/csv-1.4.2.tar.gz;
+    sha256 = "05s8py2qr3889c72g1q07r15pzch3j66xdphxi2sd93h5lvnpi4j";
   };
 
   buildInputs = [ ocaml findlib ];
@@ -27,6 +27,6 @@ stdenv.mkDerivation {
     homepage = https://github.com/Chris00/ocaml-csv;
     license = licenses.lgpl21;
     maintainers = [ maintainers.vbgl ];
-    platforms = ocaml.meta.platforms;
+    platforms = ocaml.meta.platforms or [];
   };
 }

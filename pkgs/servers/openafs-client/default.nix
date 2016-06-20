@@ -1,25 +1,18 @@
-{ stdenv, fetchurl, which, autoconf, automake, flex, yacc,
+{ stdenv, fetchurl, fetchgit, which, autoconf, automake, flex, yacc,
   kernel, glibc, ncurses, perl, kerberos }:
 
-assert stdenv.isLinux;
-assert builtins.substring 0 4 kernel.version != "3.18";
-
-stdenv.mkDerivation {
-  name = "openafs-1.6.9-${kernel.version}";
+stdenv.mkDerivation rec {
+  name = "openafs-${version}-${kernel.version}";
+  version = "1.6.17";
 
   src = fetchurl {
-    url = http://www.openafs.org/dl/openafs/1.6.9/openafs-1.6.9-src.tar.bz2;
-    sha256 = "1isgw7znp10w0mr3sicnjzbc12bd1gdwfqqr667w6p3syyhs6bkv";
+    url = "http://www.openafs.org/dl/openafs/${version}/openafs-${version}-src.tar.bz2";
+    sha256 = "16532f4951piv1g2i539233868xfs1damrnxql61gjgxpwnklhcn";
   };
 
-  patches = [
-   ./f3c0f74186f4a323ffc5f125d961fe384d396cac.patch
-   ./ae86b07f827d6f3e2032a412f5f6cb3951a27d2d.patch
-   ./I5558c64760e4cad2bd3dc648067d81020afc69b6.patch
-   ./If1fd9d27f795dee4b5aa2152dd09e0540d643a69.patch
-  ];
+  nativeBuildInputs = [ autoconf automake flex yacc perl which ];
 
-  buildInputs = [ autoconf automake flex yacc ncurses perl which ];
+  buildInputs = [ ncurses ];
 
   preConfigure = ''
     ln -s "${kernel.dev}/lib/modules/"*/build $TMP/linux
@@ -28,28 +21,32 @@ stdenv.mkDerivation {
     for i in `grep -l -R '/usr/\(include\|src\)' .`; do
       echo "Patch /usr/include and /usr/src in $i"
       substituteInPlace $i \
-        --replace "/usr/include" "${glibc}/include" \
+        --replace "/usr/include" "${glibc.dev}/include" \
         --replace "/usr/src" "$TMP"
     done
 
     ./regen.sh
 
-    ${stdenv.lib.optionalString (kerberos != null) ''
-      export KRB5_CONFIG=${kerberos}/bin/krb5-config"
-    ''}
+    ${stdenv.lib.optionalString (kerberos != null)
+      "export KRB5_CONFIG=${kerberos}/bin/krb5-config"}
 
     configureFlagsArray=(
       "--with-linux-kernel-build=$TMP/linux"
       ${stdenv.lib.optionalString (kerberos != null) "--with-krb5"}
       "--sysconfdir=/etc/static"
+      "--disable-linux-d_splice-alias-extra-iput"
     )
   '';
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "Open AFS client";
-    homepage = http://www.openafs.org;
-    license = stdenv.lib.licenses.ipl10;
-    platforms = stdenv.lib.platforms.linux;
-    maintainers = [ stdenv.lib.maintainers.z77z ];
+    homepage = https://www.openafs.org;
+    license = licenses.ipl10;
+    platforms = platforms.linux;
+    maintainers = [ maintainers.z77z ];
+    broken =
+      (builtins.compareVersions kernel.version  "3.18" == -1) ||
+      (builtins.compareVersions kernel.version "4.4" != -1) ||
+      (kernel.features.grsecurity or false);
   };
 }

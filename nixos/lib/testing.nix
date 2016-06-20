@@ -1,6 +1,6 @@
-{ system, minimal ? false }:
+{ system, minimal ? false, config ? {} }:
 
-with import ./build-vms.nix { inherit system minimal; };
+with import ./build-vms.nix { inherit system minimal config; };
 with pkgs;
 
 rec {
@@ -14,6 +14,8 @@ rec {
     buildInputs = [ makeWrapper perl ];
 
     unpackPhase = "true";
+
+    preferLocalBuild = true;
 
     installPhase =
       ''

@@ -3,7 +3,7 @@
 import ./make-test.nix ({pkgs, ... }: {
   name = "printing";
   meta = with pkgs.stdenv.lib.maintainers; {
-    maintainers = [ iElectric eelco chaoflow jgeerds vcunat ];
+    maintainers = [ domenkozar eelco chaoflow jgeerds ];
   };
 
   nodes = {
@@ -60,10 +60,10 @@ import ./make-test.nix ({pkgs, ... }: {
       $client->succeed("lpq") =~ /DeskjetRemote is ready.*no entries/s or die;
 
       # Test printing various file types.
-      foreach my $file ("${pkgs.groff}/share/doc/*/examples/mom/penguin.pdf",
-                        "${pkgs.groff}/share/doc/*/meref.ps",
-                        "${pkgs.cups}/share/doc/cups/images/cups.png",
-                        "${pkgs.pcre}/share/doc/pcre/pcre.txt")
+      foreach my $file ("${pkgs.groff.doc}/share/doc/*/examples/mom/penguin.pdf",
+                        "${pkgs.groff.doc}/share/doc/*/meref.ps",
+                        "${pkgs.cups.out}/share/doc/cups/images/cups.png",
+                        "${pkgs.pcre.doc}/share/doc/pcre/pcre.txt")
       {
           $file =~ /([^\/]*)$/; my $fn = $1;
 
@@ -78,7 +78,7 @@ import ./make-test.nix ({pkgs, ... }: {
               # (showing that the right filters have been applied).  Of
               # course, since there is no actual USB printer attached, the
               # file will stay in the queue forever.
-              $server->waitForFile("/var/spool/cups/d00001-001");
+              $server->waitForFile("/var/spool/cups/d*-001");
               $server->sleep(10);
               $server->succeed("lpq -a") =~ /$fn/ or die;
 
@@ -90,6 +90,9 @@ import ./make-test.nix ({pkgs, ... }: {
               Machine::retry sub {
                 return 1 if $server->succeed("lpq -a") =~ /no entries/;
               };
+              # The queue is empty already, so this should be safe.
+              # Otherwise, pairs of "c*"-"d*-001" files might persist.
+              $server->execute("rm /var/spool/cups/*");
           };
       }
     '';

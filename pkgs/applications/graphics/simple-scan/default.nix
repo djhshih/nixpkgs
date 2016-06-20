@@ -1,14 +1,49 @@
-{ stdenv, fetchurl, cairo, colord, glib, gtk3, intltool, itstool, libxml2
-, makeWrapper, pkgconfig, saneBackends, systemd, vala }:
+{ stdenv, fetchurl, cairo, colord, glib, gtk3, gusb, intltool, itstool
+, libusb1, libxml2, pkgconfig, sane-backends, vala, wrapGAppsHook   
+, gnome3 }:
 
-let version = "3.17.3"; in
 stdenv.mkDerivation rec {
   name = "simple-scan-${version}";
+  version = "3.21.1";
 
   src = fetchurl {
-    sha256 = "1kb2xk4vr2nab3hfjfnfyapv2z65h99c3g7mfkmanzrng5xwrj8q";
-    url = "https://launchpad.net/simple-scan/3.17/${version}/+download/${name}.tar.xz";
+    sha256 = "00w206isni8m8qd9m8x0644s1gqg11pvgnw6zav33b0bs2h2kk79";
+    url = "https://launchpad.net/simple-scan/3.21/${version}/+download/${name}.tar.xz";
   };
+
+  buildInputs = [ cairo colord glib gusb gtk3 libusb1 libxml2 sane-backends
+    vala ];
+  nativeBuildInputs = [ intltool itstool pkgconfig wrapGAppsHook ];
+
+  configureFlags = [ "--disable-packagekit" ];
+
+  patchPhase = ''
+    sed -i -e 's#Icon=scanner#Icon=simple-scan#g' ./data/simple-scan.desktop.in
+  '';
+
+  preBuild = ''
+    # Clean up stale .c files referencing packagekit headers as of 3.20.0:
+    make clean
+  '';
+
+  postInstall = ''
+    (
+    cd ${gnome3.defaultIconTheme}/share/icons/Adwaita
+
+    for f in `find . | grep 'scanner\.'` 
+    do
+      local outFile="`echo "$out/share/icons/hicolor/$f" | sed \
+        -e 's#/devices/#/apps/#g' \
+        -e 's#scanner\.#simple-scan\.#g'`"
+      mkdir -p "`realpath -m "$outFile/.."`"
+      cp "$f" "$outFile"
+    done
+    )
+  '';
+
+  enableParallelBuilding = true;
+
+  doCheck = true;
 
   meta = with stdenv.lib; {
     description = "Simple scanning utility";
@@ -22,20 +57,7 @@ stdenv.mkDerivation rec {
     '';
     homepage = https://launchpad.net/simple-scan;
     license = licenses.gpl3Plus;
-    platforms = with platforms; linux;
+    platforms = platforms.linux;
     maintainers = with maintainers; [ nckx ];
   };
-
-  buildInputs = [ cairo colord glib gtk3 libxml2
-    saneBackends systemd vala ];
-  nativeBuildInputs = [ intltool itstool makeWrapper pkgconfig ];
-
-  enableParallelBuilding = true;
-
-  doCheck = true;
-
-  preFixup = ''
-    wrapProgram "$out/bin/simple-scan" \
-      --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH"
-  '';
 }

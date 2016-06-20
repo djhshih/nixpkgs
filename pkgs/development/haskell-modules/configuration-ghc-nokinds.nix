@@ -44,8 +44,6 @@ self: super: {
   nats = dontHaddock super.nats;
   bytestring-builder = dontHaddock super.bytestring-builder;
 
-  alex = dontCheck super.alex;
-
   # We have time 1.5
   aeson = disableCabalFlag super.aeson "old-locale";
 
@@ -65,10 +63,10 @@ self: super: {
 
   # Setup: At least the following dependencies are missing: base <4.8
   hspec-expectations = overrideCabal super.hspec-expectations (drv: {
-    patchPhase = "sed -i -e 's|base < 4.8|base|' hspec-expectations.cabal";
+    postPatch = "sed -i -e 's|base < 4.8|base|' hspec-expectations.cabal";
   });
   utf8-string = overrideCabal super.utf8-string (drv: {
-    patchPhase = "sed -i -e 's|base >= 3 && < 4.8|base|' utf8-string.cabal";
+    postPatch = "sed -i -e 's|base >= 3 && < 4.8|base|' utf8-string.cabal";
   });
 
   # bos/attoparsec#92

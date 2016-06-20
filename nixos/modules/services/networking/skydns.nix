@@ -56,6 +56,7 @@ in {
 
     package = mkOption {
       default = pkgs.skydns;
+      defaultText = "pkgs.skydns";
       type = types.package;
       description = "Skydns package to use.";
     };
@@ -79,10 +80,10 @@ in {
         ETCD_CACERT = cfg.etcd.caCert;
         SKYDNS_ADDR = cfg.address;
         SKYDNS_DOMAIN = cfg.domain;
-        SKYDNS_NAMESERVER = concatStringsSep "," cfg.nameservers;
+        SKYDNS_NAMESERVERS = concatStringsSep "," cfg.nameservers;
       };
       serviceConfig = {
-        ExecStart = "${cfg.package}/bin/skydns";
+        ExecStart = "${cfg.package.bin}/bin/skydns";
       };
     };
 

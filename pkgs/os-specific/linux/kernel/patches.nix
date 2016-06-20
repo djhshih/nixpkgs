@@ -1,4 +1,4 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchurl, pkgs }:
 
 let
 
@@ -18,19 +18,33 @@ let
       };
     };
 
-  grsecPatch = { grversion ? "3.1", kversion, revision, branch, sha256 }:
-    { name = "grsecurity-${grversion}-${kversion}";
-      inherit grversion kversion revision;
-      patch = fetchurl {
-        url = "http://grsecurity.net/${branch}/grsecurity-${grversion}-${kversion}-${revision}.patch";
-        inherit sha256;
-      };
-      features.grsecurity = true;
-    };
+  grsecPatch = { grbranch ? "test", grver ? "3.1", kver, grrev, sha256 }: rec {
+    name = "grsecurity-${grver}-${kver}-${grrev}";
 
+    # Pass these along to allow the caller to determine compatibility
+    inherit grver kver grrev;
+
+    patch = fetchurl {
+      # When updating versions/hashes, ALWAYS use the official version; we use
+      # this mirror only because upstream removes sources files immediately upon
+      # releasing a new version ...
+      url = "https://raw.githubusercontent.com/slashbeast/grsecurity-scrape/master/${grbranch}/${name}.patch";
+      inherit sha256;
+    };
+  };
 in
 
 rec {
+
+  link_lguest =
+    { name = "gcc5-link-lguest";
+      patch = ./gcc5-link-lguest.patch;
+    };
+
+  link_apm =
+    { name = "gcc5-link-apm";
+      patch = ./gcc5-link-apm.patch;
+    };
 
   bridge_stp_helper =
     { name = "bridge-stp-helper";
@@ -58,29 +72,38 @@ rec {
       patch = ./mips-ext3-n32.patch;
     };
 
+  ubuntu_fan_4_4 =
+    { name = "ubuntu-fan";
+      patch = ./ubuntu-fan-4.4.patch;
+    };
+
+  ubuntu_unprivileged_overlayfs =
+    { name = "ubuntu-unprivileged-overlayfs";
+      patch = ./ubuntu-unprivileged-overlayfs.patch;
+    };
+
   tuxonice_3_10 = makeTuxonicePatch {
     version = "2013-11-07";
     kernelVersion = "3.10.18";
     sha256 = "00b1rqgd4yr206dxp4mcymr56ymbjcjfa4m82pxw73khj032qw3j";
   };
 
-  grsecurity_stable = grsecPatch
-    { kversion  = "3.14.48";
-      revision  = "201507111210";
-      branch    = "stable";
-      sha256    = "0phmqlkx6vqlv79ppf6g4wsx7rwsvwpakpkm9xsq8qazffk7s9qk";
+  grsecurity_3_14 = throw "grsecurity stable is no longer supported";
+
+  grsecurity_4_4 = throw "grsecurity stable is no longer supported";
+
+  grsecurity_testing = grsecPatch
+    { kver   = "4.5.7";
+      grrev  = "201606142010";
+      sha256 = "00lg4zlxxcl9a27vxl4c4cv6adsdvl00kkbl6s97523vsvsvy1q0";
     };
 
-  grsecurity_unstable = grsecPatch
-    { kversion  = "4.0.8";
-      revision  = "201507111211";
-      branch    = "test";
-      sha256    = "1p9ym8hbwaan9pgxgn8k4rm3n33wl8ag1fzmyr5f4mxs634wgwgx";
-    };
-
-  grsec_fix_path =
-    { name = "grsec-fix-path";
-      patch = ./grsec-path.patch;
+  # This patch relaxes grsec constraints on the location of usermode helpers,
+  # e.g., modprobe, to allow calling into the Nix store.
+  grsecurity_nixos_kmod =
+    {
+      name  = "grsecurity-nixos-kmod";
+      patch = ./grsecurity-nixos-kmod.patch;
     };
 
   crc_regression =
@@ -88,4 +111,33 @@ rec {
       patch = ./crc-regression.patch;
     };
 
+  genksyms_fix_segfault =
+    { name = "genksyms-fix-segfault";
+      patch = ./genksyms-fix-segfault.patch;
+    };
+
+
+  chromiumos_Kconfig_fix_entries_3_14 =
+    { name = "Kconfig_fix_entries_3_14";
+      patch = ./chromiumos-patches/fix-double-Kconfig-entry-3.14.patch;
+    };
+
+  chromiumos_Kconfig_fix_entries_3_18 =
+    { name = "Kconfig_fix_entries_3_18";
+      patch = ./chromiumos-patches/fix-double-Kconfig-entry-3.18.patch;
+    };
+
+  chromiumos_no_link_restrictions =
+    { name = "chromium-no-link-restrictions";
+      patch = ./chromiumos-patches/no-link-restrictions.patch;
+    };
+
+  chromiumos_mfd_fix_dependency =
+    { name = "mfd_fix_dependency";
+      patch = ./chromiumos-patches/mfd-fix-dependency.patch;
+    };
+  qat_common_Makefile =
+    { name = "qat_common_Makefile";
+      patch = ./qat_common_Makefile.patch;
+    };
 }

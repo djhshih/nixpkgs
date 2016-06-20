@@ -1,5 +1,6 @@
-{ stdenv, fetchurl, fetchFromGitHub, pkgconfig, perl, python, which, makeWrapper
-, libX11, libxcb, qt5, mesa
+{ stdenv, fetchurl, fetchFromGitHub, pkgconfig, perl, python, which, makeQtWrapper
+, libX11, libxcb, mesa
+, qtbase, qtdeclarative, qtquickcontrols, qttools, qtx11extras, qmakeHook
 , ffmpeg
 , libchardet
 , mpg123
@@ -26,28 +27,20 @@ assert pulseSupport -> libpulseaudio != null;
 assert cddaSupport -> libcdda != null;
 assert youtubeSupport -> youtube-dl != null;
 
-let
-  waf = fetchurl {
-    url = http://ftp.waf.io/pub/release/waf-1.8.4;
-    sha256 = "1a7skwgpl91adhcwlmdr76xzdpidh91hvcmj34zz6548bpx3a87h";
-  };
-
-in
-
 stdenv.mkDerivation rec {
   name = "bomi-${version}";
-  version = "0.9.10";
+  version = "0.9.11";
 
   src = fetchFromGitHub {
     owner = "xylosper";
     repo = "bomi";
     rev = "v${version}";
-    sha256 = "1c7497gks7yxzfy6jx77vn9zs2pdq7y6l9w61miwnkdm91093n17";
+    sha256 = "0a7n46gn3n5098lxxvl3s29s8jlkzss6by9074jx94ncn9cayf2h";
   };
 
   buildInputs = with stdenv.lib;
                 [ libX11 libxcb mesa
-                  qt5.base qt5.x11extras qt5.declarative qt5.quickcontrols
+                  qtbase qtx11extras
                   ffmpeg
                   libchardet
                   mpg123
@@ -60,6 +53,8 @@ stdenv.mkDerivation rec {
                   libvdpau
                   libva
                   libbluray
+                  qtdeclarative
+                  qtquickcontrols
                 ]
                 ++ optional jackSupport jack
                 ++ optional portaudioSupport portaudio
@@ -72,15 +67,16 @@ stdenv.mkDerivation rec {
   '';
 
   preBuild = ''
-    install -m755 ${waf} src/mpv/waf
     patchShebangs src/mpv/waf
     patchShebangs build-mpv
   '';
 
   postInstall = ''
-    wrapProgram $out/bin/bomi \
+    wrapQtProgram $out/bin/bomi \
       ${optionalString youtubeSupport "--prefix PATH ':' '${youtube-dl}/bin'"}
   '';
+
+  dontUseQmakeConfigure = true;
 
   configureFlags = with stdenv.lib;
                    [ "--qmake=qmake" ]
@@ -90,7 +86,7 @@ stdenv.mkDerivation rec {
                    ++ optional cddaSupport "--enable-cdda"
                    ;
 
-  nativeBuildInputs = [ pkgconfig perl python which qt5.tools makeWrapper ];
+  nativeBuildInputs = [ pkgconfig perl python which qttools makeQtWrapper qmakeHook ];
 
   enableParallelBuilding = true;
 

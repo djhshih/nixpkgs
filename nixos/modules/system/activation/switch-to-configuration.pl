@@ -97,7 +97,7 @@ sub parseFstab {
 sub parseUnit {
     my ($filename) = @_;
     my $info = {};
-    parseKeyValues($info, read_file($filename));
+    parseKeyValues($info, read_file($filename)) if -f $filename;
     parseKeyValues($info, read_file("${filename}.d/overrides.conf")) if -f "${filename}.d/overrides.conf";
     return $info;
 }
@@ -157,7 +157,8 @@ while (my ($unit, $state) = each %{$activePrev}) {
 
     if (-e $prevUnitFile && ($state->{state} eq "active" || $state->{state} eq "activating")) {
         if (! -e $newUnitFile || abs_path($newUnitFile) eq "/dev/null") {
-            $unitsToStop{$unit} = 1;
+            my $unitInfo = parseUnit($prevUnitFile);
+            $unitsToStop{$unit} = 1 if boolIsTrue($unitInfo->{'X-StopOnRemoval'} // "yes");
         }
 
         elsif ($unit =~ /\.target$/) {
@@ -260,12 +261,12 @@ while (my ($unit, $state) = each %{$activePrev}) {
 
 sub pathToUnitName {
     my ($path) = @_;
-    die unless substr($path, 0, 1) eq "/";
-    return "-" if $path eq "/";
-    $path = substr($path, 1);
-    $path =~ s/\//-/g;
-    # FIXME: handle - and unprintable characters.
-    return $path;
+    open my $cmd, "-|", "systemd-escape", "--suffix=mount", "-p", $path
+        or die "Unable to escape $path!\n";
+    my $escaped = join "", <$cmd>;
+    chomp $escaped;
+    close $cmd or die;
+    return $escaped;
 }
 
 sub unique {
@@ -289,7 +290,7 @@ my ($newFss, $newSwaps) = parseFstab "$out/etc/fstab";
 foreach my $mountPoint (keys %$prevFss) {
     my $prev = $prevFss->{$mountPoint};
     my $new = $newFss->{$mountPoint};
-    my $unit = pathToUnitName($mountPoint) . ".mount";
+    my $unit = pathToUnitName($mountPoint);
     if (!defined $new) {
         # Filesystem entry disappeared, so unmount it.
         $unitsToStop{$unit} = 1;
@@ -322,7 +323,7 @@ foreach my $device (keys %$prevSwaps) {
 
 
 # Should we have systemd re-exec itself?
-my $prevSystemd = abs_path("/proc/1/exe") or die;
+my $prevSystemd = abs_path("/proc/1/exe") // "/unknown";
 my $newSystemd = abs_path("@systemd@/lib/systemd/systemd") or die;
 my $restartSystemd = $prevSystemd ne $newSystemd;
 

@@ -6,9 +6,7 @@
 { pkgs, gimp }:
 let
   inherit (pkgs) stdenv fetchurl pkgconfig glib;
-  targetPluginDir = "$out/${gimp.name}-plugins";
-  targetScriptDir = "$out/${gimp.name}-scripts";
-  prefix = "plugin-gimp-";
+  inherit (gimp) targetPluginDir targetScriptDir;
 
   pluginDerivation = a: stdenv.mkDerivation ({
     prePhases = "extraLib";
@@ -52,7 +50,7 @@ rec {
     name = "gap-2.6.0";
     buildInputs = [ gimp pkgconfig glib pkgs.intltool gimp.gtk ] ++ gimp.nativeBuildInputs;
     src = fetchurl {
-      url = ftp://ftp.gimp.org/pub/gimp/plug-ins/v2.6/gap/gimp-gap-2.6.0.tar.bz2;
+      url = http://ftp.gimp.org/pub/gimp/plug-ins/v2.6/gap/gimp-gap-2.6.0.tar.bz2;
       sha256 = "1jic7ixcmsn4kx2cn32nc5087rk6g8xsrz022xy11yfmgvhzb0ql";
     };
     patchPhase = ''
@@ -159,24 +157,25 @@ rec {
   };
 
   gmic =
-  let
-    imagemagick = pkgs.imagemagickBig; # maybe the non big version is enough?
-  in pluginDerivation rec {
-      name = "gmic-1.5.7.2";
-      buildInputs = [imagemagick pkgconfig pkgs.fftw gimp] ++ gimp.nativeBuildInputs;
+    pluginDerivation rec {
+      name = "gmic-1.6.5.0";
+
+      buildInputs = [pkgconfig pkgs.fftw pkgs.opencv gimp] ++ gimp.nativeBuildInputs;
+
       src = fetchurl {
-        url = mirror://sourceforge/gmic/gmic_1.5.7.2.tar.gz;
-        sha256 = "1cpbxb3p2c8bcv2cbr150whapzjc7w09i3jza0z9x3xj8c0vdyv1";
+        url = http://gmic.eu/files/source/gmic_1.6.5.0.tar.gz;
+        sha256 = "1vb6zm5zpqfnzxjvb9yfvczaqacm55rf010ib0yk9f28b17qrjgb";
       };
-      preConfigure = ''
-        export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -I${imagemagick}/include/ImageMagick"
-      '';
+
       sourceRoot = "${name}/src";
-      buildPhase = "make gimp";
+
+      buildFlags = "gimp";
+
       installPhase = "installPlugins gmic_gimp";
+
       meta = {
-        description = "script language for image processing which comes with its open-source interpreter";
-        homepage = http://gmic.sourceforge.net/repository.shtml;
+        description = "Script language for image processing which comes with its open-source interpreter";
+        homepage = http://gmic.eu/gimp.shtml;
         license = stdenv.lib.licenses.cecill20;
         /*
         The purpose of this Free Software license agreement is to grant users
@@ -244,7 +243,7 @@ rec {
 
   /* =============== simple script files ==================== */
 
-  # also have a look at enblendenfuse in all-packages.nix
+  # also have a look at enblend-enfuse in all-packages.nix
   exposureBlend = scriptDerivation {
     name = "exposure-blend";
     src = fetchurl {

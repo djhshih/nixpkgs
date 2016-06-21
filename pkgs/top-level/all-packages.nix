@@ -16041,6 +16041,8 @@ in
 
   snowtools = callPackage ../applications/science/bioinformatics/snowtools {};
 
+	emu = callPackage ../applications/science/bioinformatics/emu {};
+
   ### SCIENCE/MATH
 
   arpack = callPackage ../development/libraries/science/math/arpack { };

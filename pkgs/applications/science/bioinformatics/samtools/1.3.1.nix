@@ -17,7 +17,7 @@ stdenv.mkDerivation rec {
 
   patches = [ ./install-lib_1.3.1.patch ];
 
-  doCheck = true;
+  doCheck = false;
 
   installPhase = ''
     make prefix=$out install

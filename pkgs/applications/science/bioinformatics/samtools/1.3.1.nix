@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, zlib, perl, htslib, ncurses }:
+{ stdenv, fetchurl, zlib, perl, ncurses }:
 
 stdenv.mkDerivation rec {
   version = "1.3.1";
@@ -13,7 +13,7 @@ stdenv.mkDerivation rec {
     sed -e 's|#!/usr/bin/env python|#!/usr/bin/env python2|' -i misc/varfilter.py
   '';
 
-  buildInputs = [ zlib perl htslib ncurses ];
+  buildInputs = [ zlib perl ncurses ];
 
   patches = [ ./install-lib_1.3.1.patch ];
 

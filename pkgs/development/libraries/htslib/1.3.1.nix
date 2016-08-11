@@ -9,6 +9,10 @@ stdenv.mkDerivation rec {
     sha256 = "1rja282fwdc25ql6izkhdyh8ppw8x2fs0w0js78zgkmqjlikmma9";
   };
 
+  preBuild = ''
+    sed -e 's|/usr/bin/perl -w|/usr/bin/env perl|' -i  test/compare_sam.pl
+  '';
+
   buildInputs = [ zlib perl ];
 
   doCheck = true;
